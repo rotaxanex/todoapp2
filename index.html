@@ -7,8 +7,8 @@
   <title>Minimal To-Do App</title>
   
   <link rel="manifest" href="manifest.json" />
-  <link rel="icon" type="image/png" href="icon-512.png" />
-  <link rel="apple-touch-icon" href="icon-512.png" />
+  <link rel="icon" type="image/png" href="Icon-512.png" />
+  <link rel="apple-touch-icon" href="Icon-512.png" />
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -39,7 +39,9 @@
     .btn-primary { background:var(--accent); color:#000; border-color:var(--accent); font-weight:600; }
     .fab { position: fixed; bottom: 75px; right: 20px; width: 56px; height: 56px; background: var(--accent); color: #000; border-radius: 50%; display: grid; place-items: center; font-size: 30px; box-shadow: 0 10px 30px rgba(0,0,0,.35); z-index: 90; border:none; cursor: pointer; }
 
+    /* Takvim Başlığı için de kullanıyoruz */
     .daily-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    
     .date-display { text-align: center; }
     .date-big { font-size: 18px; font-weight: bold; }
     .date-small { font-size: 13px; color: var(--muted); }
@@ -181,7 +183,6 @@
         .on('postgres_changes', { event: '*', schema: 'public', table: 'user_data' }, payload => {
           if(payload.new && payload.new.id === currentUser.id){
             db = payload.new.content;
-            // Sayfa ne olursa olsun, veri değişince yenile
             renderCurrentPage();
           }
         })
@@ -216,9 +217,7 @@
     }
 
     function renderCurrentPage(){
-      // SAYFAYI TEMİZLE - Duplicate sorununu çözen yer burası
       pageContainer.innerHTML = '';
-      
       if(currentPage === 'daily') renderDaily();
       else if(currentPage === 'calendar') renderCalendar();
       else if(currentPage === 'inbox') renderInbox();
@@ -241,16 +240,30 @@
       if(items.length === 0) pageContainer.innerHTML += `<div style="text-align:center; color:var(--muted); margin-top:50px;">Bugün için plan yok.</div>`;
       else items.forEach(item => pageContainer.appendChild(createTaskCard(item, 'day', k)));
     }
+    
+    // GÜN VE AY DEĞİŞTİRME FONKSİYONLARI
     function changeDay(delta){ selectedDate.setDate(selectedDate.getDate() + delta); renderCurrentPage(); }
+    
+    // YENİ EKLENEN FONKSİYON: Ay Değiştirme
+    function changeMonth(delta){ 
+        selectedDate.setMonth(selectedDate.getMonth() + delta); 
+        renderCurrentPage(); 
+    }
 
     function renderCalendar(){
       const year = selectedDate.getFullYear(); const month = selectedDate.getMonth();
       const firstDay = new Date(year, month, 1); const startDay = (firstDay.getDay() + 6) % 7; 
       const daysInMonth = new Date(year, month+1, 0).getDate();
       
-      const headerTitle = document.createElement('h2');
-      headerTitle.textContent = firstDay.toLocaleDateString('tr-TR', {month:'long', year:'numeric'});
-      pageContainer.appendChild(headerTitle);
+      // HEADER DÜZENLENDİ: OK TUŞLARI EKLENDİ
+      const header = document.createElement('div');
+      header.className = 'daily-header';
+      header.innerHTML = `
+        <button class="arrow-btn" onclick="changeMonth(-1)">❮</button>
+        <h2 style="margin:0">${firstDay.toLocaleDateString('tr-TR', {month:'long', year:'numeric'})}</h2>
+        <button class="arrow-btn" onclick="changeMonth(1)">❯</button>
+      `;
+      pageContainer.appendChild(header);
 
       const grid = document.createElement('div'); grid.className = 'calendar-grid';
       ['Pt','Sa','Ça','Pe','Cu','Ct','Pa'].forEach(d => grid.innerHTML += `<div style="text-align:center; font-size:12px; color:var(--muted);">${d}</div>`);
@@ -270,7 +283,6 @@
         cell.className = `cal-cell ${isToday ? 'today' : ''} ${isSelected ? 'active-day' : ''}`;
         cell.innerHTML = `<div>${d}</div><div class="dots">${dotsHtml}</div>`;
         
-        // HATA BURADAYDI: renderCalendar() yerine renderCurrentPage() kullanıyoruz
         cell.onclick = () => { 
             selectedDate = current; 
             renderCurrentPage(); 
@@ -283,7 +295,6 @@
       // Bottom Notes
       const bottomSection = document.createElement('div');
       const selKey = dayKey(selectedDate);
-      // SADECE ÖNEMLİLERİ GÖSTERMEK İÇİN FILTER KULLANDIK. TÜMÜNÜ İSTERSEN .filter(...) kısmını sil.
       const selItems = (db.days[selKey] || []).filter(x => ['termin','hedef'].includes(x.type));
       
       bottomSection.innerHTML = `<div style="margin-top:20px; border-top:1px solid var(--line); padding-top:10px; color:var(--muted);">${selectedDate.toLocaleDateString('tr-TR')} - Önemli Notlar</div>`;
