@@ -15,119 +15,72 @@
   <style>
     :root{
       --bg:#0f0f10; --card:#17171a; --muted:#a3a3a3; --text:#f5f5f5; --line:#2a2a2f; --accent:#7dd3fc;
-      --shadow: 0 10px 30px rgba(0,0,0,.35);
-      --frame-termin:#fb7185; --frame-hedef:#60a5fa; --frame-gorev:#34d399;
       --nav-height: 60px;
+      --frame-termin:#fb7185; --frame-hedef:#60a5fa; --frame-gorev:#34d399;
     }
-
-    *{ box-sizing:border-box; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; -webkit-tap-highlight-color: transparent; }
+    *{ box-sizing:border-box; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
     html, body{ height:100%; margin:0; background:var(--bg); color:var(--text); overflow:hidden; }
     
-    /* GİRİŞ EKRANI */
     #authOverlay { position: fixed; inset: 0; background: var(--bg); z-index: 999; display: flex; align-items: center; justify-content: center; padding: 20px; }
     .authBox { width: 100%; max-width: 360px; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 24px; text-align:center; }
     .authBox input { width:100%; padding:12px; margin-bottom:10px; background:#000; border:1px solid var(--line); color:#fff; border-radius:10px; }
     .authBtn { width:100%; padding:12px; background:var(--accent); color:#000; font-weight:bold; border:0; border-radius:10px; cursor:pointer; margin-top:5px; }
 
-    /* ANA YAPI */
     .app-container { height: 100%; display: flex; flex-direction: column; }
     .page-content { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 80px; position: relative; }
     
-    /* ALT MENÜ */
-    .bottom-nav {
-      position: fixed; bottom: 0; left: 0; right: 0; height: var(--nav-height);
-      background: var(--card); border-top: 1px solid var(--line);
-      display: flex; justify-content: space-around; align-items: center; z-index: 100;
-    }
-    .nav-item {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 4px; color: var(--muted); background: none; border: none; font-size: 10px; cursor: pointer; width: 20%;
-    }
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: var(--nav-height); background: var(--card); border-top: 1px solid var(--line); display: flex; justify-content: space-around; align-items: center; z-index: 100; }
+    .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--muted); background: none; border: none; font-size: 10px; cursor: pointer; width: 20%; }
     .nav-item.active { color: var(--accent); }
     .nav-icon { font-size: 20px; line-height: 1; }
 
-    /* GENEL STİLLER */
     h2 { margin: 0 0 16px 0; font-size: 22px; font-weight: 700; }
     .btn { background:var(--card); border:1px solid var(--line); color:var(--text); padding:8px 12px; border-radius:10px; cursor:pointer; }
     .btn-primary { background:var(--accent); color:#000; border-color:var(--accent); font-weight:600; }
-    .fab {
-      position: fixed; bottom: 75px; right: 20px; width: 56px; height: 56px;
-      background: var(--accent); color: #000; border-radius: 50%;
-      display: grid; place-items: center; font-size: 30px; box-shadow: var(--shadow);
-      z-index: 90; border:none; cursor: pointer;
-    }
+    .fab { position: fixed; bottom: 75px; right: 20px; width: 56px; height: 56px; background: var(--accent); color: #000; border-radius: 50%; display: grid; place-items: center; font-size: 30px; box-shadow: 0 10px 30px rgba(0,0,0,.35); z-index: 90; border:none; cursor: pointer; }
 
-    /* GÜNLÜK & KARTLAR */
     .daily-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
     .date-display { text-align: center; }
     .date-big { font-size: 18px; font-weight: bold; }
     .date-small { font-size: 13px; color: var(--muted); }
     .arrow-btn { background: transparent; border: none; color: var(--text); font-size: 24px; padding: 10px; cursor: pointer; }
 
-    .task-card {
-      background: var(--card); border-left: 4px solid var(--line); border-radius: 12px;
-      padding: 12px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 12px;
-      border: 1px solid var(--line); 
-    }
+    .task-card { background: var(--card); border-left: 4px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 12px; border: 1px solid var(--line); }
     .task-card.termin { border-left-color: var(--frame-termin); }
     .task-card.hedef { border-left-color: var(--frame-hedef); }
     .task-card.gorev { border-left-color: var(--frame-gorev); }
     .task-card.done { opacity: 0.5; }
-    .check-circle {
-      width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--muted);
-      flex-shrink: 0; display: grid; place-items: center; cursor: pointer; margin-top: 2px;
-    }
+    .check-circle { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--muted); flex-shrink: 0; display: grid; place-items: center; cursor: pointer; margin-top: 2px; }
     .check-circle.checked { background: var(--accent); border-color: var(--accent); color: #000; font-weight: bold; font-size: 14px; }
-    
-    /* TAKVİM */
+    .task-content { flex:1; cursor: pointer; } /* Tıklanabilir yapıldı */
+
     .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 15px; }
-    .cal-cell {
-      aspect-ratio: 1; background: var(--card); border-radius: 8px; border: 1px solid var(--line);
-      display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative;
-    }
+    .cal-cell { aspect-ratio: 1; background: var(--card); border-radius: 8px; border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; }
     .cal-cell.today { border-color: var(--accent); color: var(--accent); font-weight: bold; }
-    .cal-cell.selected { background: #2a2a2f; }
-    .cal-cell.out { opacity: 0.3; }
     .dots { display: flex; gap: 2px; margin-top: 2px; }
     .dot { width: 4px; height: 4px; border-radius: 50%; }
 
-    /* HABITS & TAGS */
-    .habit-row {
-      display: flex; align-items: center; justify-content: space-between;
-      background: var(--card); padding: 14px; border-radius: 12px; margin-bottom: 8px; border: 1px solid var(--line);
-    }
+    .habit-row { display: flex; align-items: center; justify-content: space-between; background: var(--card); padding: 14px; border-radius: 12px; margin-bottom: 8px; border: 1px solid var(--line); }
     .habit-left { display: flex; align-items: center; gap: 12px; }
-    .tag-row { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--card); border-radius: 10px; margin-bottom: 8px; }
+    
+    .tag-row { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--card); border-radius: 10px; margin-bottom: 8px; cursor: grab; }
+    .tag-row.dragging { opacity: 0.5; border: 1px dashed #777; }
+    .tag-row.drag-over { border: 2px dashed var(--accent); }
     .color-dot { width: 16px; height: 16px; border-radius: 50%; }
 
-    /* MODAL & DIALOG */
-    .modal-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200;
-      display: none; align-items: flex-end; 
-    }
-    .modal-sheet {
-      width: 100%; background: #1c1c1e; border-radius: 20px 20px 0 0; padding: 20px;
-      animation: slideUp 0.3s ease;
-    }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: none; align-items: flex-end; }
+    .modal-sheet { width: 100%; background: #1c1c1e; border-radius: 20px 20px 0 0; padding: 20px; animation: slideUp 0.3s ease; }
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-    
     .modal-input { width: 100%; padding: 12px; background: #000; border: 1px solid var(--line); color: #fff; border-radius: 10px; margin-bottom: 10px; }
     .modal-row { display: flex; gap: 10px; margin-bottom: 10px; }
     .modal-select { flex: 1; padding: 10px; background: #000; border: 1px solid var(--line); color: #fff; border-radius: 8px; }
 
     #dialogOverlay { display:none; }
 
-    /* BİLGİSAYAR GÖRÜNÜMÜ */
     @media (min-width: 768px) {
       body { background: #050505; }
-      .app-container {
-        max-width: 700px; margin: 0 auto; background: var(--bg);
-        border-left: 1px solid var(--line); border-right: 1px solid var(--line); min-height: 100vh;
-      }
-      .bottom-nav {
-        max-width: 700px; left: 50%; transform: translateX(-50%);
-        border-right: 1px solid var(--line); border-left: 1px solid var(--line);
-      }
+      .app-container { max-width: 700px; margin: 0 auto; background: var(--bg); border-left: 1px solid var(--line); border-right: 1px solid var(--line); min-height: 100vh; }
+      .bottom-nav { max-width: 700px; left: 50%; transform: translateX(-50%); border-right: 1px solid var(--line); border-left: 1px solid var(--line); }
       .fab { right: auto; left: 50%; margin-left: 270px; }
       .modal-sheet { max-width: 700px; margin: 0 auto; left: 0; right: 0; }
     }
@@ -173,7 +126,7 @@
 
   <div id="modalOverlay" class="modal-overlay">
     <div class="modal-sheet">
-      <h3 style="margin-top:0;">Yeni Ekle</h3>
+      <h3 id="modalTitle" style="margin-top:0;">Yeni Ekle</h3>
       <input type="text" id="mText" class="modal-input" placeholder="Başlık..." />
       <div class="modal-row">
         <input type="time" id="mTime" class="modal-input" style="flex:1;" />
@@ -192,32 +145,29 @@
   </div>
 
   <script>
-    // --- SUPABASE AYARLARI ---
     const SUPABASE_URL = "https://czuprhvrnlqpipcytvwx.supabase.co"; 
     const SUPABASE_KEY = "sb_publishable_IR67FHQQNsnA9aNMizaqUA_HYGC8cKM"; 
-    
     let _supabase = null;
     if(SUPABASE_URL && SUPABASE_KEY) _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // --- STATE ---
     let db = { days:{}, inbox:[], tags:[], habits:[], habitState:{date:'', doneIds:[]} };
     let currentUser = null;
     let currentPage = 'daily';
     let selectedDate = new Date();
     let currentModalDest = 'day';
+    let dragSrcEl = null;
+    
+    // Düzenleme durumu için değişken
+    let editState = null; // { id, source, key }
 
-    // --- BAŞLANGIÇ ---
     const appWrap = document.getElementById('appWrap');
     const authOverlay = document.getElementById('authOverlay');
     const pageContainer = document.getElementById('pageContainer');
 
     async function initApp(){
       const { data: { session } } = await _supabase.auth.getSession();
-      if(session) {
-        handleSession(session);
-      } else {
-        authOverlay.style.display = 'flex';
-      }
+      if(session) handleSession(session);
+      else authOverlay.style.display = 'flex';
     }
 
     async function handleSession(session){
@@ -226,57 +176,36 @@
       appWrap.style.display = 'flex';
       
       await loadRemoteDB();
+      if(!db.tags || db.tags.length===0) db.tags = [{name:'genel', color:'#7dd3fc'}];
+
+      _supabase.channel('public:user_data')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'user_data' }, payload => {
+          if(payload.new && payload.new.id === currentUser.id){
+            db = payload.new.content;
+            renderCurrentPage();
+          }
+        })
+        .subscribe();
       
-      // İlk yüklemede varsayılan tag yoksa ekle
-      if(!db.tags || db.tags.length===0) {
-        db.tags = [
-          { name:'akademik', color:'#7dd3fc' },
-          { name:'praktikum', color:'#34d399' },
-          { name:'finans', color:'#fbbf24' },
-          { name:'ev', color:'#fb7185' }
-        ];
-      }
       router('daily');
     }
 
     async function loadRemoteDB(){
-      // Önce yerel yedeği yükle (hız için)
       const local = localStorage.getItem('mini_todo_v1');
-      if(local) {
-        try { db = JSON.parse(local); } catch(e){}
-      }
-
-      // Sunucudan çek
-      const { data, error } = await _supabase
-        .from('user_data')
-        .select('content')
-        .eq('id', currentUser.id)
-        .single();
-
-      if(data && data.content) {
-        db = data.content;
-        localStorage.setItem('mini_todo_v1', JSON.stringify(db));
-      } else {
-        // Eğer sunucuda veri yoksa (Yeni Kullanıcı), yereldeki boş db'yi sunucuya yaz
-        // Bu senin 'SQL tablosu boş' sorununu çözer.
-        saveDB(); 
-      }
+      if(local) { try { db = JSON.parse(local); } catch(e){} }
+      const { data } = await _supabase.from('user_data').select('content').eq('id', currentUser.id).single();
+      if(data && data.content) { db = data.content; localStorage.setItem('mini_todo_v1', JSON.stringify(db)); }
+      else saveDB();
     }
 
     function saveDB(){
       localStorage.setItem('mini_todo_v1', JSON.stringify(db));
       if(currentUser) {
-        // SQL yapına uygun olarak: id, content, updated_at
-        _supabase.from('user_data').upsert({ 
-          id: currentUser.id, 
-          content: db, 
-          updated_at: new Date() 
-        }).then();
+        _supabase.from('user_data').upsert({ id: currentUser.id, content: db, updated_at: new Date() }).then();
       }
       renderCurrentPage();
     }
 
-    // --- ROUTER ---
     function router(page){
       currentPage = page;
       document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
@@ -295,71 +224,47 @@
       else if(currentPage === 'settings') renderSettings();
     }
 
-    // --- SAYFALAR ---
+    function dayKey(d){ 
+      const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
     function renderDaily(){
       const k = dayKey(selectedDate);
       const items = (db.days[k] || []);
       const header = document.createElement('div');
       header.className = 'daily-header';
-      header.innerHTML = `
-        <button class="arrow-btn" onclick="changeDay(-1)">❮</button>
-        <div class="date-display">
-          <div class="date-big">${selectedDate.toLocaleDateString('tr-TR', {day:'numeric', month:'long'})}</div>
-          <div class="date-small">${selectedDate.toLocaleDateString('tr-TR', {weekday:'long', year:'numeric'})}</div>
-        </div>
-        <button class="arrow-btn" onclick="changeDay(1)">❯</button>
-      `;
+      header.innerHTML = `<button class="arrow-btn" onclick="changeDay(-1)">❮</button><div class="date-display"><div class="date-big">${selectedDate.toLocaleDateString('tr-TR', {day:'numeric', month:'long'})}</div><div class="date-small">${selectedDate.toLocaleDateString('tr-TR', {weekday:'long', year:'numeric'})}</div></div><button class="arrow-btn" onclick="changeDay(1)">❯</button>`;
       pageContainer.appendChild(header);
       if(items.length === 0) pageContainer.innerHTML += `<div style="text-align:center; color:var(--muted); margin-top:50px;">Bugün için plan yok.</div>`;
       else items.forEach(item => pageContainer.appendChild(createTaskCard(item, 'day', k)));
     }
-
-    function changeDay(delta){
-      selectedDate.setDate(selectedDate.getDate() + delta);
-      renderCurrentPage();
-    }
+    function changeDay(delta){ selectedDate.setDate(selectedDate.getDate() + delta); renderCurrentPage(); }
 
     function renderCalendar(){
-      const year = selectedDate.getFullYear();
-      const month = selectedDate.getMonth();
-      const firstDay = new Date(year, month, 1);
-      const startDay = (firstDay.getDay() + 6) % 7; 
+      const year = selectedDate.getFullYear(); const month = selectedDate.getMonth();
+      const firstDay = new Date(year, month, 1); const startDay = (firstDay.getDay() + 6) % 7; 
       const daysInMonth = new Date(year, month+1, 0).getDate();
-      
-      const title = document.createElement('h2');
-      title.textContent = firstDay.toLocaleDateString('tr-TR', {month:'long', year:'numeric'});
-      pageContainer.appendChild(title);
-
-      const grid = document.createElement('div');
-      grid.className = 'calendar-grid';
+      pageContainer.innerHTML += `<h2>${firstDay.toLocaleDateString('tr-TR', {month:'long', year:'numeric'})}</h2>`;
+      const grid = document.createElement('div'); grid.className = 'calendar-grid';
       ['Pt','Sa','Ça','Pe','Cu','Ct','Pa'].forEach(d => grid.innerHTML += `<div style="text-align:center; font-size:12px; color:var(--muted);">${d}</div>`);
       for(let i=0; i<startDay; i++) grid.innerHTML += `<div></div>`;
-
       for(let d=1; d<=daysInMonth; d++){
-        const current = new Date(year, month, d);
-        const k = dayKey(current);
+        const current = new Date(year, month, d); const k = dayKey(current);
         const dayItems = db.days[k] || [];
-        const hasTermin = dayItems.some(x => x.type === 'termin' && !x.done);
-        const hasHedef = dayItems.some(x => x.type === 'hedef' && !x.done);
         let dotsHtml = '';
-        if(hasTermin) dotsHtml += `<span class="dot" style="background:var(--frame-termin)"></span>`;
-        if(hasHedef) dotsHtml += `<span class="dot" style="background:var(--frame-hedef)"></span>`;
+        if(dayItems.some(x => x.type === 'termin' && !x.done)) dotsHtml += `<span class="dot" style="background:var(--frame-termin)"></span>`;
+        if(dayItems.some(x => x.type === 'hedef' && !x.done)) dotsHtml += `<span class="dot" style="background:var(--frame-hedef)"></span>`;
         const isToday = k === dayKey(new Date());
-        
-        const cell = document.createElement('div');
-        cell.className = `cal-cell ${isToday ? 'today' : ''}`;
+        const cell = document.createElement('div'); cell.className = `cal-cell ${isToday ? 'today' : ''}`;
         cell.innerHTML = `<div>${d}</div><div class="dots">${dotsHtml}</div>`;
         cell.onclick = () => { selectedDate = current; router('daily'); };
         grid.appendChild(cell);
       }
       pageContainer.appendChild(grid);
-      
       const selKey = dayKey(selectedDate);
       const selItems = (db.days[selKey] || []).filter(x => ['termin','hedef'].includes(x.type));
-      const subTitle = document.createElement('div');
-      subTitle.style.marginTop = '20px'; subTitle.style.color = 'var(--muted)';
-      subTitle.textContent = `${selectedDate.toLocaleDateString('tr-TR')} - Önemli Notlar`;
-      pageContainer.appendChild(subTitle);
+      pageContainer.innerHTML += `<div style="margin-top:20px; color:var(--muted);">${selectedDate.toLocaleDateString('tr-TR')} - Önemli Notlar</div>`;
       if(selItems.length===0) pageContainer.innerHTML += `<div style="font-size:12px; margin-top:5px; color:#555">Kayıt yok.</div>`;
       else selItems.forEach(item => pageContainer.appendChild(createTaskCard(item, 'day', selKey)));
     }
@@ -373,146 +278,64 @@
 
     function renderHabits(){
       const todayK = dayKey(new Date());
-      if(db.habitState.date !== todayK){
-        db.habitState = { date: todayK, doneIds: [] };
-        saveDB();
-      }
-      const header = document.createElement('div');
-      header.style.display='flex'; header.style.justifyContent='space-between'; header.style.alignItems='center';
-      header.innerHTML = `<h2>Alışkanlıklar</h2><button class="btn" onclick="addNewHabit()">+ Ekle</button>`;
-      pageContainer.appendChild(header);
-      pageContainer.innerHTML += `<div style="color:var(--muted); margin-bottom:15px; font-size:12px;">Her gün sıfırlanır</div>`;
-
+      if(db.habitState.date !== todayK){ db.habitState = { date: todayK, doneIds: [] }; saveDB(); }
+      pageContainer.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center;"><h2>Alışkanlıklar</h2><button class="btn" onclick="addNewHabit()">+ Ekle</button></div><div style="color:var(--muted); margin-bottom:15px; font-size:12px;">Her gün sıfırlanır</div>`;
       (db.habits || []).forEach(h => {
         const isDone = db.habitState.doneIds.includes(h.id);
-        const div = document.createElement('div');
-        div.className = 'habit-row';
-        div.innerHTML = `
-          <div class="habit-left">
-            <div class="check-circle ${isDone ? 'checked' : ''}">✓</div>
-            <span style="${isDone ? 'opacity:0.5' : ''}">${h.name}</span>
-          </div>
-          <button style="background:none; border:none; color:#555;" onclick="deleteHabit('${h.id}')">🗑</button>
-        `;
+        const div = document.createElement('div'); div.className = 'habit-row';
+        div.innerHTML = `<div class="habit-left"><div class="check-circle ${isDone ? 'checked' : ''}">✓</div><span style="${isDone ? 'opacity:0.5' : ''}">${h.name}</span></div><button style="background:none; border:none; color:#555;" onclick="deleteHabit('${h.id}')">🗑</button>`;
         div.querySelector('.check-circle').onclick = () => toggleHabit(h.id);
         pageContainer.appendChild(div);
       });
     }
 
-    function toggleHabit(id){
-      const s = new Set(db.habitState.doneIds);
-      if(s.has(id)) s.delete(id); else s.add(id);
-      db.habitState.doneIds = [...s];
-      saveDB();
-    }
-
     function renderSettings(){
-      pageContainer.innerHTML = `<h2>Tag Ayarları</h2>`;
-      const adder = document.createElement('div');
-      adder.style.marginBottom='15px';
-      adder.innerHTML = `
-        <div style="display:flex; gap:10px;">
-          <input type="text" id="newTagName" placeholder="Yeni tag ismi" style="flex:1; padding:8px; background:#000; border:1px solid #333; color:#fff; border-radius:8px;">
-          <input type="color" id="newTagColor" value="#7dd3fc" style="width:40px; height:40px; border:none; background:none;">
-          <button class="btn" onclick="addTag()">Ekle</button>
-        </div>
-      `;
+      pageContainer.innerHTML = `<h2>Tag Ayarları</h2><div style="color:var(--muted); font-size:12px; margin-bottom:15px;">Sıralamayı değiştirmek için sürükleyip bırakın.</div>`;
+      const adder = document.createElement('div'); adder.style.marginBottom='15px';
+      adder.innerHTML = `<div style="display:flex; gap:10px;"><input type="text" id="newTagName" placeholder="Yeni tag ismi" style="flex:1; padding:8px; background:#000; border:1px solid #333; color:#fff; border-radius:8px;"><input type="color" id="newTagColor" value="#7dd3fc" style="width:40px; height:40px; border:none; background:none;"><button class="btn" onclick="addTag()">Ekle</button></div>`;
       pageContainer.appendChild(adder);
+      const listContainer = document.createElement('div'); listContainer.id='tagListContainer'; pageContainer.appendChild(listContainer);
+
       if(db.tags && db.tags.length > 0){
-        db.tags.forEach(t => {
-          pageContainer.innerHTML += `
-            <div class="tag-row">
-              <div class="color-dot" style="background:${t.color}"></div>
-              <div style="flex:1">${t.name}</div>
-              <button style="background:none; border:none; color:#555;" onclick="removeTag('${t.name}')">🗑</button>
-            </div>
-          `;
+        db.tags.forEach((t, index) => {
+          const row = document.createElement('div'); row.className = 'tag-row'; row.draggable = true; row.dataset.index = index;
+          row.innerHTML = `<div style="font-size:18px; color:#555; cursor:grab; margin-right:10px;">☰</div><div class="color-dot" style="background:${t.color}"></div><div style="flex:1">${t.name}</div><button style="background:none; border:none; color:#555;" onclick="removeTag('${t.name}')">🗑</button>`;
+          
+          row.addEventListener('dragstart', function(e) { dragSrcEl = this; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/html', this.innerHTML); this.classList.add('dragging'); });
+          row.addEventListener('dragover', function(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; this.classList.add('drag-over'); return false; });
+          row.addEventListener('dragleave', function() { this.classList.remove('drag-over'); });
+          row.addEventListener('dragend', function() { this.classList.remove('dragging'); document.querySelectorAll('.tag-row').forEach(el => el.classList.remove('drag-over')); });
+          row.addEventListener('drop', function(e) { 
+            e.stopPropagation();
+            if (dragSrcEl !== this) {
+              const oldIndex = parseInt(dragSrcEl.dataset.index); const newIndex = parseInt(this.dataset.index);
+              const item = db.tags.splice(oldIndex, 1)[0]; db.tags.splice(newIndex, 0, item);
+              saveDB(); renderSettings();
+            }
+            return false;
+          });
+          listContainer.appendChild(row);
         });
-      } else {
-        pageContainer.innerHTML += `<div style="color:#555; font-size:13px;">Hiç tag yok.</div>`;
-      }
+      } else { listContainer.innerHTML = `<div style="color:#555; font-size:13px;">Hiç tag yok.</div>`; }
       pageContainer.innerHTML += `<button class="btn" style="width:100%; margin-top:30px; border-color:#fb7185; color:#fb7185;" onclick="logoutApp()">Çıkış Yap</button>`;
     }
 
-    function addTag(){
-      const name = document.getElementById('newTagName').value.trim();
-      const color = document.getElementById('newTagColor').value;
-      if(name){ db.tags.push({name, color}); saveDB(); }
-    }
+    function addTag(){ const name = document.getElementById('newTagName').value.trim(); const color = document.getElementById('newTagColor').value; if(name){ db.tags.push({name, color}); saveDB(); } }
+    function removeTag(name){ customConfirm("Tag Sil", `"${name}" silinsin mi?`, () => { db.tags = db.tags.filter(t => t.name !== name); saveDB(); }); }
+    function logoutApp(){ customConfirm("Çıkış Yap", "Emin misin?", async () => { try{ await _supabase.auth.signOut(); }catch(e){} localStorage.clear(); window.location.reload(); }); }
+    function toggleHabit(id){ const s = new Set(db.habitState.doneIds); if(s.has(id)) s.delete(id); else s.add(id); db.habitState.doneIds = [...s]; saveDB(); }
+    function deleteHabit(id){ customConfirm("Sil", "Silinsin mi?", () => { db.habits = db.habits.filter(h => h.id !== id); saveDB(); }); }
+    function addNewHabit(){ customPrompt("Yeni Alışkanlık", "Örn: Kitap", (val) => { if(val && val.trim()) { db.habits = db.habits || []; db.habits.push({ id: Date.now().toString(), name: val.trim() }); saveDB(); } }); }
+    function deleteTask(id, source, key){ customConfirm("Sil", "Silinsin mi?", () => { if(source==='inbox') db.inbox=db.inbox.filter(x=>x.id!==id); else { db.days[key]=db.days[key].filter(x=>x.id!==id); if(db.days[key].length===0) delete db.days[key]; } saveDB(); }); }
 
-    // --- DIALOG ---
-    const dialogOverlay = document.getElementById('dialogOverlay');
-    const dialogTitle = document.getElementById('dialogTitle');
-    const dialogMsg = document.getElementById('dialogMsg');
-    const dialogInput = document.getElementById('dialogInput');
-    const dialogOk = document.getElementById('dialogOk');
-    const dialogCancel = document.getElementById('dialogCancel');
-    let onDialogOk = null;
-
-    function closeDialog() { dialogOverlay.style.display = 'none'; dialogInput.value = ''; onDialogOk = null; }
-    dialogCancel.onclick = closeDialog;
-    dialogOk.onclick = () => { if(onDialogOk) onDialogOk(dialogInput.value); closeDialog(); };
-
-    function customConfirm(title, msg, callback) {
-      dialogTitle.textContent = title; dialogMsg.textContent = msg; dialogMsg.style.display = 'block';
-      dialogInput.style.display = 'none'; onDialogOk = callback; dialogOverlay.style.display = 'flex';
-    }
-    function customPrompt(title, placeholder, callback) {
-      dialogTitle.textContent = title; dialogMsg.style.display = 'none'; dialogInput.style.display = 'block';
-      dialogInput.placeholder = placeholder; onDialogOk = callback; dialogOverlay.style.display = 'flex'; dialogInput.focus();
-    }
-
-    // --- ACTIONS ---
-    function deleteTask(id, source, key){
-      customConfirm("Silinsin mi?", "Bu işlem geri alınamaz.", () => {
-        if(source === 'inbox') db.inbox = db.inbox.filter(x => x.id !== id);
-        else {
-          db.days[key] = db.days[key].filter(x => x.id !== id);
-          if(db.days[key].length === 0) delete db.days[key];
-        }
-        saveDB();
-      });
-    }
-    function addNewHabit(){
-      customPrompt("Yeni Alışkanlık", "Örn: Kitap oku", (val) => {
-        if(val && val.trim()) { db.habits = db.habits || []; db.habits.push({ id: Date.now().toString(), name: val.trim() }); saveDB(); }
-      });
-    }
-    function deleteHabit(id){
-      customConfirm("Alışkanlık Sil", "Bu alışkanlık silinsin mi?", () => { db.habits = db.habits.filter(h => h.id !== id); saveDB(); });
-    }
-    function removeTag(name){
-      customConfirm("Tag Sil", `"${name}" etiketi silinsin mi?`, () => { db.tags = db.tags.filter(t => t.name !== name); saveDB(); });
-    }
-   // --- ZORLA ÇIKIŞ FONKSİYONU (Kesin Çözüm) ---
-    function logoutApp(){
-      customConfirm("Çıkış Yap", "Hesabından çıkış yapmak istiyor musun?", async () => {
-        try {
-          // 1. Supabase sunucusuna çıkış isteği at
-          await _supabase.auth.signOut();
-        } catch (error) {
-          console.log("Sunucu çıkış hatası (önemsiz):", error);
-        } finally {
-          // 2. Hata verse bile tarayıcıdaki tüm verileri ve oturum anahtarlarını SİL
-          localStorage.clear(); 
-          sessionStorage.clear();
-          
-          // 3. Sayfayı yenile (Artık giriş ekranı gelmek zorunda)
-          window.location.reload();
-        }
-      });
-    }
-    // --- ORTAK ---
     function createTaskCard(item, source, sourceKey){
-      const el = document.createElement('div');
-      const typeClass = item.type || 'gorev';
-      el.className = `task-card ${typeClass} ${item.done ? 'done' : ''}`;
-      const tagObj = db.tags.find(t=>t.name===item.tag);
-      const tagColor = tagObj ? tagObj.color : '#666';
-
+      const el = document.createElement('div'); el.className = `task-card ${item.type||'gorev'} ${item.done ? 'done' : ''}`;
+      const tagObj = db.tags.find(t=>t.name===item.tag); const tagColor = tagObj ? tagObj.color : '#666';
+      
+      // ONCLICK EVENTİ EKLENDİ: openEditTask
       el.innerHTML = `
         <div class="check-circle ${item.done ? 'checked' : ''}">✓</div>
-        <div style="flex:1">
+        <div class="task-content" onclick="openEditTask('${item.id}', '${source}', '${sourceKey}')">
           <div style="font-size:14px; line-height:1.4;">${item.text}</div>
           <div style="display:flex; gap:8px; margin-top:4px; align-items:center;">
             ${item.time ? `<span style="font-size:11px; color:var(--muted);">⏰ ${item.time}</span>` : ''}
@@ -525,84 +348,83 @@
       return el;
     }
 
-    // DÜZELTİLMİŞ KEY (TIMEZONE SORUNSUZ)
-    function dayKey(d){ 
-      const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
+    const dialogOverlay = document.getElementById('dialogOverlay'); const dialogTitle = document.getElementById('dialogTitle'); const dialogMsg = document.getElementById('dialogMsg'); const dialogInput = document.getElementById('dialogInput'); const dialogOk = document.getElementById('dialogOk'); const dialogCancel = document.getElementById('dialogCancel'); let onDialogOk = null;
+    function closeDialog() { dialogOverlay.style.display = 'none'; dialogInput.value = ''; onDialogOk = null; }
+    dialogCancel.onclick = closeDialog; dialogOk.onclick = () => { if(onDialogOk) onDialogOk(dialogInput.value); closeDialog(); };
+    function customConfirm(title, msg, callback) { dialogTitle.textContent = title; dialogMsg.textContent = msg; dialogMsg.style.display = 'block'; dialogInput.style.display = 'none'; onDialogOk = callback; dialogOverlay.style.display = 'flex'; }
+    function customPrompt(title, placeholder, callback) { dialogTitle.textContent = title; dialogMsg.style.display = 'none'; dialogInput.style.display = 'block'; dialogInput.placeholder = placeholder; onDialogOk = callback; dialogOverlay.style.display = 'flex'; dialogInput.focus(); }
+
+    const fabBtn = document.getElementById('fabBtn'); const modalOverlay = document.getElementById('modalOverlay'); const modalClose = document.getElementById('modalClose'); const modalSave = document.getElementById('modalSave');
+    fabBtn.onclick = () => openModal(); modalClose.onclick = () => modalOverlay.style.display='none';
+    
+    // --- MODAL YÖNETİMİ (YENİ EKLEME VE DÜZENLEME) ---
+    function fillTagSelect() {
+      const tagSelect = document.getElementById('mTag'); tagSelect.innerHTML = `<option value="">Etiket Yok</option>`;
+      (db.tags||[]).forEach(t => tagSelect.innerHTML += `<option value="${t.name}" style="color:${t.color}">${t.name}</option>`);
     }
 
-    // --- MODAL ---
-    const fabBtn = document.getElementById('fabBtn');
-    const modalOverlay = document.getElementById('modalOverlay');
-    const modalClose = document.getElementById('modalClose');
-    const modalSave = document.getElementById('modalSave');
-
-    fabBtn.onclick = () => openModal();
-    modalClose.onclick = () => modalOverlay.style.display='none';
-    
     function openModal(){
+      editState = null; // Yeni ekleme modu
+      document.getElementById('modalTitle').textContent = "Yeni Ekle";
       currentModalDest = currentPage === 'inbox' ? 'inbox' : 'day';
-      document.getElementById('mText').value = '';
-      document.getElementById('mTime').value = '';
-      const tagSelect = document.getElementById('mTag');
-      tagSelect.innerHTML = `<option value="">Etiket Yok</option>`;
-      (db.tags||[]).forEach(t => tagSelect.innerHTML += `<option value="${t.name}">${t.name}</option>`);
+      document.getElementById('mText').value = ''; document.getElementById('mTime').value = '';
+      fillTagSelect();
+      modalOverlay.style.display = 'flex'; document.getElementById('mText').focus();
+    }
+
+    function openEditTask(id, source, key) {
+      // 1. Öğeyi bul
+      let item = null;
+      if (source === 'inbox') {
+        item = db.inbox.find(x => x.id === id);
+      } else {
+        item = db.days[key].find(x => x.id === id);
+      }
+      if (!item) return;
+
+      // 2. Modu ayarla
+      editState = { id, source, key };
+      document.getElementById('modalTitle').textContent = "Düzenle";
+      
+      // 3. Verileri doldur
+      fillTagSelect();
+      document.getElementById('mText').value = item.text;
+      document.getElementById('mTime').value = item.time || '';
+      document.getElementById('mType').value = item.type || 'gorev';
+      document.getElementById('mTag').value = item.tag || '';
+
+      // 4. Modalı aç
       modalOverlay.style.display = 'flex';
-      document.getElementById('mText').focus();
     }
 
     modalSave.onclick = () => {
-      const text = document.getElementById('mText').value.trim();
-      if(!text) return;
-      const newItem = {
-        id: Date.now().toString(), text, time: document.getElementById('mTime').value,
-        type: document.getElementById('mType').value, tag: document.getElementById('mTag').value, done: false
-      };
-      if(currentModalDest === 'inbox'){ db.inbox = db.inbox || []; db.inbox.push(newItem); }
-      else { const k = dayKey(selectedDate); db.days[k] = db.days[k] || []; db.days[k].push(newItem); }
-      saveDB();
-      modalOverlay.style.display = 'none';
-    };
+      const text = document.getElementById('mText').value.trim(); if(!text) return;
+      const time = document.getElementById('mTime').value;
+      const type = document.getElementById('mType').value;
+      const tag = document.getElementById('mTag').value;
 
-    // --- AUTH HATA AYIKLAMALI ---
-    const btnLogin = document.getElementById('btnLogin');
-    const btnSignup = document.getElementById('btnSignup');
-    const authError = document.getElementById('authError');
-
-    btnLogin.onclick = async () => {
-      const email = document.getElementById('authEmail').value;
-      const pass = document.getElementById('authPass').value;
-      if(!email || !pass) { alert("E-posta ve şifre girin."); return; }
-      
-      btnLogin.textContent = "Giriş Yapılıyor...";
-      authError.textContent = "";
-
-      const { data, error } = await _supabase.auth.signInWithPassword({ email, password: pass });
-      
-      if(error) { 
-        authError.textContent = error.message; 
-        btnLogin.textContent = "Giriş Yap";
-        // Şifre yanlışsa uyarı ver
-        if(error.message.includes("Invalid login")) alert("Hata: E-posta veya şifre yanlış.");
-        else alert("Hata: " + error.message);
-      } else { 
-        window.location.reload(); 
+      if (editState) {
+        // --- GÜNCELLEME ---
+        let list = (editState.source === 'inbox') ? db.inbox : db.days[editState.key];
+        let item = list.find(x => x.id === editState.id);
+        if (item) {
+          item.text = text; item.time = time; item.type = type; item.tag = tag;
+        }
+      } else {
+        // --- YENİ EKLEME ---
+        const newItem = { id: Date.now().toString(), text, time, type, tag, done: false };
+        if(currentModalDest === 'inbox'){ db.inbox = db.inbox || []; db.inbox.push(newItem); } 
+        else { const k = dayKey(selectedDate); db.days[k] = db.days[k] || []; db.days[k].push(newItem); }
       }
+
+      saveDB(); modalOverlay.style.display = 'none';
     };
-    
-    btnSignup.onclick = async () => {
-      const email = document.getElementById('authEmail').value;
-      const pass = document.getElementById('authPass').value;
-      btnSignup.textContent = "İşleniyor...";
-      authError.textContent = "";
-      const { data, error } = await _supabase.auth.signUp({ email, password: pass });
-      if(error) { authError.textContent = error.message; alert(error.message); }
-      else { alert("Kayıt başarılı! Şimdi 'Giriş Yap' butonuna basarak girebilirsin."); }
-      btnSignup.textContent = "Kayıt Ol";
-    };
+
+    const btnLogin = document.getElementById('btnLogin'); const btnSignup = document.getElementById('btnSignup'); const authError = document.getElementById('authError');
+    btnLogin.onclick = async () => { const email = document.getElementById('authEmail').value; const pass = document.getElementById('authPass').value; btnLogin.textContent = "Giriş Yapılıyor..."; authError.textContent = ""; const { data, error } = await _supabase.auth.signInWithPassword({ email, password: pass }); if(error) { authError.textContent = error.message; btnLogin.textContent = "Giriş Yap"; } else { window.location.reload(); } };
+    btnSignup.onclick = async () => { const email = document.getElementById('authEmail').value; const pass = document.getElementById('authPass').value; btnSignup.textContent = "İşleniyor..."; authError.textContent = ""; const { data, error } = await _supabase.auth.signUp({ email, password: pass }); if(error) { authError.textContent = error.message; } else { alert("Kayıt başarılı!"); } btnSignup.textContent = "Kayıt Ol"; };
 
     initApp();
-
   </script>
 </body>
 </html>
