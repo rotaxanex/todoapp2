@@ -5,13 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <meta name="theme-color" content="#111111" />
   <title>Minimal To-Do App</title>
-   <link rel="manifest" href="manifest.json" />
-
-  <link rel="icon" type="image/png" href="icon-1024.png" />
-
-  <link rel="apple-touch-icon" href="icon-1024.png" />
-
-
+  
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" href="Icon-512.png" />
+  <link rel="apple-touch-icon" href="Icon-512.png" />
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -36,7 +33,7 @@
     .app-container { height: 100%; display: flex; flex-direction: column; }
     .page-content { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 80px; position: relative; }
     
-    /* ALT MENÜ (BOTTOM TAB) */
+    /* ALT MENÜ */
     .bottom-nav {
       position: fixed; bottom: 0; left: 0; right: 0; height: var(--nav-height);
       background: var(--card); border-top: 1px solid var(--line);
@@ -49,7 +46,7 @@
     .nav-item.active { color: var(--accent); }
     .nav-icon { font-size: 20px; line-height: 1; }
 
-    /* ORTAK BİLEŞENLER */
+    /* GENEL STİLLER */
     h2 { margin: 0 0 16px 0; font-size: 22px; font-weight: 700; }
     .btn { background:var(--card); border:1px solid var(--line); color:var(--text); padding:8px 12px; border-radius:10px; cursor:pointer; }
     .btn-primary { background:var(--accent); color:#000; border-color:var(--accent); font-weight:600; }
@@ -60,7 +57,7 @@
       z-index: 90; border:none; cursor: pointer;
     }
 
-    /* SAYFA: GÜNLÜK */
+    /* GÜNLÜK & KARTLAR */
     .daily-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
     .date-display { text-align: center; }
     .date-big { font-size: 18px; font-weight: bold; }
@@ -70,7 +67,7 @@
     .task-card {
       background: var(--card); border-left: 4px solid var(--line); border-radius: 12px;
       padding: 12px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 12px;
-      border: 1px solid var(--line); /* Fallback */
+      border: 1px solid var(--line); 
     }
     .task-card.termin { border-left-color: var(--frame-termin); }
     .task-card.hedef { border-left-color: var(--frame-hedef); }
@@ -82,7 +79,7 @@
     }
     .check-circle.checked { background: var(--accent); border-color: var(--accent); color: #000; font-weight: bold; font-size: 14px; }
     
-    /* SAYFA: TAKVİM */
+    /* TAKVİM */
     .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 15px; }
     .cal-cell {
       aspect-ratio: 1; background: var(--card); border-radius: 8px; border: 1px solid var(--line);
@@ -94,21 +91,19 @@
     .dots { display: flex; gap: 2px; margin-top: 2px; }
     .dot { width: 4px; height: 4px; border-radius: 50%; }
 
-    /* SAYFA: HABITS */
+    /* HABITS & TAGS */
     .habit-row {
       display: flex; align-items: center; justify-content: space-between;
       background: var(--card); padding: 14px; border-radius: 12px; margin-bottom: 8px; border: 1px solid var(--line);
     }
     .habit-left { display: flex; align-items: center; gap: 12px; }
-
-    /* SAYFA: TAGS */
     .tag-row { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--card); border-radius: 10px; margin-bottom: 8px; }
     .color-dot { width: 16px; height: 16px; border-radius: 50%; }
 
-    /* MODAL */
+    /* MODAL & DIALOG */
     .modal-overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200;
-      display: none; align-items: flex-end; /* Bottom sheet effect */
+      display: none; align-items: flex-end; 
     }
     .modal-sheet {
       width: 100%; background: #1c1c1e; border-radius: 20px 20px 0 0; padding: 20px;
@@ -120,6 +115,22 @@
     .modal-row { display: flex; gap: 10px; margin-bottom: 10px; }
     .modal-select { flex: 1; padding: 10px; background: #000; border: 1px solid var(--line); color: #fff; border-radius: 8px; }
 
+    #dialogOverlay { display:none; }
+
+    /* BİLGİSAYAR GÖRÜNÜMÜ */
+    @media (min-width: 768px) {
+      body { background: #050505; }
+      .app-container {
+        max-width: 700px; margin: 0 auto; background: var(--bg);
+        border-left: 1px solid var(--line); border-right: 1px solid var(--line); min-height: 100vh;
+      }
+      .bottom-nav {
+        max-width: 700px; left: 50%; transform: translateX(-50%);
+        border-right: 1px solid var(--line); border-left: 1px solid var(--line);
+      }
+      .fab { right: auto; left: 50%; margin-left: 270px; }
+      .modal-sheet { max-width: 700px; margin: 0 auto; left: 0; right: 0; }
+    }
   </style>
 </head>
 <body>
@@ -136,34 +147,27 @@
     </div>
   </div>
 
-  <div id="appWrap" class="app-container" style="display:none;">
-    
-    <div id="pageContainer" class="page-content">
+  <div id="dialogOverlay" class="modal-overlay" style="z-index: 300; align-items:center; justify-content:center;">
+    <div class="authBox" style="background:#1c1c1e; border:1px solid var(--line); width:90%; max-width:320px;">
+      <h3 id="dialogTitle" style="margin-top:0;">Başlık</h3>
+      <p id="dialogMsg" style="color:var(--muted); font-size:14px; margin-bottom:15px;"></p>
+      <input type="text" id="dialogInput" class="modal-input" style="display:none;" />
+      <div style="display:flex; gap:10px; margin-top:15px;">
+        <button id="dialogCancel" class="btn" style="flex:1;">İptal</button>
+        <button id="dialogOk" class="btn btn-primary" style="flex:1;">Tamam</button>
       </div>
+    </div>
+  </div>
 
+  <div id="appWrap" class="app-container" style="display:none;">
+    <div id="pageContainer" class="page-content"></div>
     <button id="fabBtn" class="fab">+</button>
-
     <nav class="bottom-nav">
-      <button class="nav-item active" onclick="router('daily')">
-        <span class="nav-icon">📅</span>
-        <span>Günlük</span>
-      </button>
-      <button class="nav-item" onclick="router('calendar')">
-        <span class="nav-icon">🗓️</span>
-        <span>Takvim</span>
-      </button>
-      <button class="nav-item" onclick="router('inbox')">
-        <span class="nav-icon">📥</span>
-        <span>Inbox</span>
-      </button>
-      <button class="nav-item" onclick="router('habits')">
-        <span class="nav-icon">✅</span>
-        <span>Habits</span>
-      </button>
-      <button class="nav-item" onclick="router('settings')">
-        <span class="nav-icon">⚙️</span>
-        <span>Ayarlar</span>
-      </button>
+      <button class="nav-item active" onclick="router('daily')"><span class="nav-icon">📅</span><span>Günlük</span></button>
+      <button class="nav-item" onclick="router('calendar')"><span class="nav-icon">🗓️</span><span>Takvim</span></button>
+      <button class="nav-item" onclick="router('inbox')"><span class="nav-icon">📥</span><span>Inbox</span></button>
+      <button class="nav-item" onclick="router('habits')"><span class="nav-icon">✅</span><span>Habits</span></button>
+      <button class="nav-item" onclick="router('settings')"><span class="nav-icon">⚙️</span><span>Ayarlar</span></button>
     </nav>
   </div>
 
@@ -180,7 +184,6 @@
         </select>
       </div>
       <select id="mTag" class="modal-select" style="width:100%; margin-bottom:15px;"></select>
-      
       <div style="display:flex; gap:10px;">
         <button id="modalClose" class="btn" style="flex:1;">İptal</button>
         <button id="modalSave" class="btn btn-primary" style="flex:1;">Kaydet</button>
@@ -201,7 +204,7 @@
     let currentUser = null;
     let currentPage = 'daily';
     let selectedDate = new Date();
-    let currentModalDest = 'day'; // 'day' or 'inbox'
+    let currentModalDest = 'day';
 
     // --- BAŞLANGIÇ ---
     const appWrap = document.getElementById('appWrap');
@@ -218,7 +221,6 @@
       authOverlay.style.display = 'none';
       appWrap.style.display = 'flex';
       await loadRemoteDB();
-      // Varsayılan taglar yoksa ekle
       if(!db.tags || db.tags.length===0) {
         db.tags = [
           { name:'akademik', color:'#7dd3fc' },
@@ -230,11 +232,9 @@
       router('daily');
     }
 
-    // --- DB İŞLEMLERİ ---
     async function loadRemoteDB(){
       const local = localStorage.getItem('mini_todo_v1');
       if(local) db = JSON.parse(local);
-      
       const { data } = await _supabase.from('user_data').select('content').eq('id', currentUser.id).single();
       if(data && data.content) {
         db = data.content;
@@ -250,17 +250,13 @@
       renderCurrentPage();
     }
 
-    // --- ROUTER (MENÜ GEÇİŞLERİ) ---
+    // --- ROUTER ---
     function router(page){
       currentPage = page;
-      // Aktif menüyü güncelle
       document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
       const map = {'daily':0, 'calendar':1, 'inbox':2, 'habits':3, 'settings':4};
       document.querySelectorAll('.nav-item')[map[page]].classList.add('active');
-      
-      // FAB Butonunu yönet
       document.getElementById('fabBtn').style.display = (page === 'settings' || page === 'calendar') ? 'none' : 'grid';
-
       renderCurrentPage();
     }
 
@@ -273,11 +269,10 @@
       else if(currentPage === 'settings') renderSettings();
     }
 
-    // --- SAYFA 1: GÜNLÜK ---
+    // --- SAYFALAR ---
     function renderDaily(){
       const k = dayKey(selectedDate);
       const items = (db.days[k] || []);
-
       const header = document.createElement('div');
       header.className = 'daily-header';
       header.innerHTML = `
@@ -289,15 +284,8 @@
         <button class="arrow-btn" onclick="changeDay(1)">❯</button>
       `;
       pageContainer.appendChild(header);
-
-      if(items.length === 0){
-        pageContainer.innerHTML += `<div style="text-align:center; color:var(--muted); margin-top:50px;">Bugün için plan yok.</div>`;
-        return;
-      }
-
-      items.forEach(item => {
-        pageContainer.appendChild(createTaskCard(item, 'day', k));
-      });
+      if(items.length === 0) pageContainer.innerHTML += `<div style="text-align:center; color:var(--muted); margin-top:50px;">Bugün için plan yok.</div>`;
+      else items.forEach(item => pageContainer.appendChild(createTaskCard(item, 'day', k)));
     }
 
     function changeDay(delta){
@@ -305,87 +293,64 @@
       renderCurrentPage();
     }
 
-    // --- SAYFA 2: TAKVİM (WIDGET TARZI) ---
     function renderCalendar(){
       const year = selectedDate.getFullYear();
       const month = selectedDate.getMonth();
       const firstDay = new Date(year, month, 1);
-      const startDay = (firstDay.getDay() + 6) % 7; // Pzt=0
+      const startDay = (firstDay.getDay() + 6) % 7; 
       const daysInMonth = new Date(year, month+1, 0).getDate();
-
+      
       const title = document.createElement('h2');
       title.textContent = firstDay.toLocaleDateString('tr-TR', {month:'long', year:'numeric'});
       pageContainer.appendChild(title);
 
       const grid = document.createElement('div');
       grid.className = 'calendar-grid';
-      
-      // Başlıklar
-      ['Pt','Sa','Ça','Pe','Cu','Ct','Pa'].forEach(d => {
-        grid.innerHTML += `<div style="text-align:center; font-size:12px; color:var(--muted);">${d}</div>`;
-      });
-
-      // Boşluklar
+      ['Pt','Sa','Ça','Pe','Cu','Ct','Pa'].forEach(d => grid.innerHTML += `<div style="text-align:center; font-size:12px; color:var(--muted);">${d}</div>`);
       for(let i=0; i<startDay; i++) grid.innerHTML += `<div></div>`;
 
-      // Günler
       for(let d=1; d<=daysInMonth; d++){
         const current = new Date(year, month, d);
         const k = dayKey(current);
         const dayItems = db.days[k] || [];
         const hasTermin = dayItems.some(x => x.type === 'termin' && !x.done);
         const hasHedef = dayItems.some(x => x.type === 'hedef' && !x.done);
-        
         let dotsHtml = '';
         if(hasTermin) dotsHtml += `<span class="dot" style="background:var(--frame-termin)"></span>`;
         if(hasHedef) dotsHtml += `<span class="dot" style="background:var(--frame-hedef)"></span>`;
-
         const isToday = k === dayKey(new Date());
         
         const cell = document.createElement('div');
         cell.className = `cal-cell ${isToday ? 'today' : ''}`;
         cell.innerHTML = `<div>${d}</div><div class="dots">${dotsHtml}</div>`;
-        cell.onclick = () => {
-          selectedDate = current;
-          router('daily');
-        };
+        cell.onclick = () => { selectedDate = current; router('daily'); };
         grid.appendChild(cell);
       }
       pageContainer.appendChild(grid);
       
-      // Seçili günün terminleri
       const selKey = dayKey(selectedDate);
       const selItems = (db.days[selKey] || []).filter(x => ['termin','hedef'].includes(x.type));
-      
       const subTitle = document.createElement('div');
-      subTitle.style.marginTop = '20px';
-      subTitle.style.color = 'var(--muted)';
+      subTitle.style.marginTop = '20px'; subTitle.style.color = 'var(--muted)';
       subTitle.textContent = `${selectedDate.toLocaleDateString('tr-TR')} - Önemli Notlar`;
       pageContainer.appendChild(subTitle);
-
       if(selItems.length===0) pageContainer.innerHTML += `<div style="font-size:12px; margin-top:5px; color:#555">Kayıt yok.</div>`;
       else selItems.forEach(item => pageContainer.appendChild(createTaskCard(item, 'day', selKey)));
     }
 
-    // --- SAYFA 3: INBOX ---
     function renderInbox(){
       pageContainer.innerHTML = `<h2>Brain Dump</h2><div style="color:var(--muted); margin-bottom:15px;">Aklına geleni buraya at.</div>`;
       const items = db.inbox || [];
       if(items.length===0) pageContainer.innerHTML += `<div style="color:#555">Inbox boş.</div>`;
-      items.forEach(item => {
-        pageContainer.appendChild(createTaskCard(item, 'inbox', null));
-      });
+      items.forEach(item => pageContainer.appendChild(createTaskCard(item, 'inbox', null)));
     }
 
-    // --- SAYFA 4: HABITS ---
     function renderHabits(){
       const todayK = dayKey(new Date());
-      // Gün değiştiyse resetle
       if(db.habitState.date !== todayK){
         db.habitState = { date: todayK, doneIds: [] };
         saveDB();
       }
-
       const header = document.createElement('div');
       header.style.display='flex'; header.style.justifyContent='space-between'; header.style.alignItems='center';
       header.innerHTML = `<h2>Alışkanlıklar</h2><button class="btn" onclick="addNewHabit()">+ Ekle</button>`;
@@ -414,29 +379,9 @@
       db.habitState.doneIds = [...s];
       saveDB();
     }
-    
-    function addNewHabit(){
-      const name = prompt("Alışkanlık adı:");
-      if(name) {
-        db.habits = db.habits || [];
-        db.habits.push({ id: Date.now().toString(), name });
-        saveDB();
-      }
-    }
 
-    function deleteHabit(id){
-      if(confirm("Silinsin mi?")) {
-        db.habits = db.habits.filter(h=>h.id!==id);
-        saveDB();
-      }
-    }
-
-    // --- SAYFA 5: AYARLAR (TAGS) ---
-        // --- AYARLAR SAYFASI ---
     function renderSettings(){
       pageContainer.innerHTML = `<h2>Tag Ayarları</h2>`;
-      
-      // Tag Ekleme Kısmı
       const adder = document.createElement('div');
       adder.style.marginBottom='15px';
       adder.innerHTML = `
@@ -447,8 +392,6 @@
         </div>
       `;
       pageContainer.appendChild(adder);
-
-      // Tag Listesi
       if(db.tags && db.tags.length > 0){
         db.tags.forEach(t => {
           pageContainer.innerHTML += `
@@ -462,46 +405,68 @@
       } else {
         pageContainer.innerHTML += `<div style="color:#555; font-size:13px;">Hiç tag yok.</div>`;
       }
-      
-      // DÜZELTİLEN ÇIKIŞ BUTONU BURADA:
       pageContainer.innerHTML += `<button class="btn" style="width:100%; margin-top:30px; border-color:#fb7185; color:#fb7185;" onclick="logoutApp()">Çıkış Yap</button>`;
-    }
-    // --- GÜVENLİ ÇIKIŞ FONKSİYONU ---
-    function logoutApp(){
-      // Senin özel diyalog kutunu kullanır
-      customConfirm("Çıkış Yap", "Hesabından çıkış yapmak istiyor musun?", async () => {
-        // Önce Supabase'den çıkışı bekle
-        await _supabase.auth.signOut();
-        // Sonra sayfayı yenile (Giriş ekranına döner)
-        window.location.reload();
-      });
-    }
-
-      
-      pageContainer.innerHTML += `<button class="btn" style="width:100%; margin-top:30px; border-color:#fb7185; color:#fb7185;" onclick="_supabase.auth.signOut(); location.reload();">Çıkış Yap</button>`;
     }
 
     function addTag(){
       const name = document.getElementById('newTagName').value.trim();
       const color = document.getElementById('newTagColor').value;
-      if(name){
-        db.tags.push({name, color});
-        saveDB();
-      }
-    }
-    function removeTag(name){
-      if(confirm(name + " silinsin mi?")){
-        db.tags = db.tags.filter(t=>t.name!==name);
-        saveDB();
-      }
+      if(name){ db.tags.push({name, color}); saveDB(); }
     }
 
-    // --- ORTAK FONKSİYONLAR ---
+    // --- DIALOG ---
+    const dialogOverlay = document.getElementById('dialogOverlay');
+    const dialogTitle = document.getElementById('dialogTitle');
+    const dialogMsg = document.getElementById('dialogMsg');
+    const dialogInput = document.getElementById('dialogInput');
+    const dialogOk = document.getElementById('dialogOk');
+    const dialogCancel = document.getElementById('dialogCancel');
+    let onDialogOk = null;
+
+    function closeDialog() { dialogOverlay.style.display = 'none'; dialogInput.value = ''; onDialogOk = null; }
+    dialogCancel.onclick = closeDialog;
+    dialogOk.onclick = () => { if(onDialogOk) onDialogOk(dialogInput.value); closeDialog(); };
+
+    function customConfirm(title, msg, callback) {
+      dialogTitle.textContent = title; dialogMsg.textContent = msg; dialogMsg.style.display = 'block';
+      dialogInput.style.display = 'none'; onDialogOk = callback; dialogOverlay.style.display = 'flex';
+    }
+    function customPrompt(title, placeholder, callback) {
+      dialogTitle.textContent = title; dialogMsg.style.display = 'none'; dialogInput.style.display = 'block';
+      dialogInput.placeholder = placeholder; onDialogOk = callback; dialogOverlay.style.display = 'flex'; dialogInput.focus();
+    }
+
+    // --- ACTIONS ---
+    function deleteTask(id, source, key){
+      customConfirm("Silinsin mi?", "Bu işlem geri alınamaz.", () => {
+        if(source === 'inbox') db.inbox = db.inbox.filter(x => x.id !== id);
+        else {
+          db.days[key] = db.days[key].filter(x => x.id !== id);
+          if(db.days[key].length === 0) delete db.days[key];
+        }
+        saveDB();
+      });
+    }
+    function addNewHabit(){
+      customPrompt("Yeni Alışkanlık", "Örn: Kitap oku", (val) => {
+        if(val && val.trim()) { db.habits = db.habits || []; db.habits.push({ id: Date.now().toString(), name: val.trim() }); saveDB(); }
+      });
+    }
+    function deleteHabit(id){
+      customConfirm("Alışkanlık Sil", "Bu alışkanlık silinsin mi?", () => { db.habits = db.habits.filter(h => h.id !== id); saveDB(); });
+    }
+    function removeTag(name){
+      customConfirm("Tag Sil", `"${name}" etiketi silinsin mi?`, () => { db.tags = db.tags.filter(t => t.name !== name); saveDB(); });
+    }
+    function logoutApp(){
+      customConfirm("Çıkış Yap", "Hesabından çıkış yapmak istiyor musun?", async () => { await _supabase.auth.signOut(); window.location.reload(); });
+    }
+
+    // --- ORTAK ---
     function createTaskCard(item, source, sourceKey){
       const el = document.createElement('div');
       const typeClass = item.type || 'gorev';
       el.className = `task-card ${typeClass} ${item.done ? 'done' : ''}`;
-      
       const tagObj = db.tags.find(t=>t.name===item.tag);
       const tagColor = tagObj ? tagObj.color : '#666';
 
@@ -516,38 +481,17 @@
         </div>
         <button style="background:none; border:none; color:#555; font-size:16px;" onclick="deleteTask('${item.id}', '${source}', '${sourceKey}')">✕</button>
       `;
-
-      el.querySelector('.check-circle').onclick = (e) => {
-        e.stopPropagation();
-        item.done = !item.done;
-        saveDB();
-      };
-      
+      el.querySelector('.check-circle').onclick = (e) => { e.stopPropagation(); item.done = !item.done; saveDB(); };
       return el;
     }
 
-    function deleteTask(id, source, key){
-      if(!confirm("Bu görev silinsin mi?")) return;
-      if(source === 'inbox'){
-        db.inbox = db.inbox.filter(x=>x.id!==id);
-      } else {
-        db.days[key] = db.days[key].filter(x=>x.id!==id);
-        if(db.days[key].length===0) delete db.days[key];
-      }
-      saveDB();
+    // DÜZELTİLMİŞ KEY (TIMEZONE SORUNSUZ)
+    function dayKey(d){ 
+      const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
     }
 
-      // DÜZELTİLMİŞ FONKSİYON
-function dayKey(d){ 
-  const y = d.getFullYear(); // Yıl: 2023 (Yerel)
-  const m = String(d.getMonth() + 1).padStart(2, '0'); // Ay: 0 ise 1 yap (Manuel düzeltme)
-  const day = String(d.getDate()).padStart(2, '0'); // Gün: 25 (Yerel)
-  return `${y}-${m}-${day}`; // Sonuç: "2023-01-25"
-}
-
-
-
-    // --- MODAL (EKLEME) ---
+    // --- MODAL ---
     const fabBtn = document.getElementById('fabBtn');
     const modalOverlay = document.getElementById('modalOverlay');
     const modalClose = document.getElementById('modalClose');
@@ -560,13 +504,9 @@ function dayKey(d){
       currentModalDest = currentPage === 'inbox' ? 'inbox' : 'day';
       document.getElementById('mText').value = '';
       document.getElementById('mTime').value = '';
-      
       const tagSelect = document.getElementById('mTag');
       tagSelect.innerHTML = `<option value="">Etiket Yok</option>`;
-      (db.tags||[]).forEach(t => {
-        tagSelect.innerHTML += `<option value="${t.name}">${t.name}</option>`;
-      });
-
+      (db.tags||[]).forEach(t => tagSelect.innerHTML += `<option value="${t.name}">${t.name}</option>`);
       modalOverlay.style.display = 'flex';
       document.getElementById('mText').focus();
     }
@@ -574,81 +514,42 @@ function dayKey(d){
     modalSave.onclick = () => {
       const text = document.getElementById('mText').value.trim();
       if(!text) return;
-      
       const newItem = {
-        id: Date.now().toString(),
-        text,
-        time: document.getElementById('mTime').value,
-        type: document.getElementById('mType').value,
-        tag: document.getElementById('mTag').value,
-        done: false
+        id: Date.now().toString(), text, time: document.getElementById('mTime').value,
+        type: document.getElementById('mType').value, tag: document.getElementById('mTag').value, done: false
       };
-
-      if(currentModalDest === 'inbox'){
-        db.inbox = db.inbox || [];
-        db.inbox.push(newItem);
-      } else {
-        const k = dayKey(selectedDate);
-        db.days[k] = db.days[k] || [];
-        db.days[k].push(newItem);
-      }
-      
+      if(currentModalDest === 'inbox'){ db.inbox = db.inbox || []; db.inbox.push(newItem); }
+      else { const k = dayKey(selectedDate); db.days[k] = db.days[k] || []; db.days[k].push(newItem); }
       saveDB();
       modalOverlay.style.display = 'none';
     };
 
-        // --- AUTH (GİRİŞ VE KAYIT DÜZELTİLMİŞ) ---
+    // --- AUTH DÜZELTİLMİŞ (SAYFA YENİLEME EKLİ) ---
     const btnLogin = document.getElementById('btnLogin');
     const btnSignup = document.getElementById('btnSignup');
     const authError = document.getElementById('authError');
 
-    // Giriş Yap Butonu
     btnLogin.onclick = async () => {
       const email = document.getElementById('authEmail').value;
       const pass = document.getElementById('authPass').value;
-
-      // Butonun yazısını değiştir ki basıldığı anlaşılsın
       btnLogin.textContent = "Giriş Yapılıyor...";
       authError.textContent = "";
-
-      const { data, error } = await _supabase.auth.signInWithPassword({
-        email: email,
-        password: pass
-      });
-
-      if(error) {
-        // Hata varsa göster
-        authError.textContent = error.message;
-        btnLogin.textContent = "Giriş Yap";
-      } else {
-        // BAŞARILI! Sayfayı yenile ki veriler gelsin
-        window.location.reload();
-      }
+      const { data, error } = await _supabase.auth.signInWithPassword({ email: email, password: pass });
+      if(error) { authError.textContent = error.message; btnLogin.textContent = "Giriş Yap"; }
+      else { window.location.reload(); }
     };
     
-    // Kayıt Ol Butonu
     btnSignup.onclick = async () => {
       const email = document.getElementById('authEmail').value;
       const pass = document.getElementById('authPass').value;
-
       btnSignup.textContent = "İşleniyor...";
       authError.textContent = "";
-
-      const { data, error } = await _supabase.auth.signUp({
-        email: email,
-        password: pass
-      });
-
-      if(error) {
-        authError.textContent = error.message;
-      } else {
-        alert("Kayıt başarılı! Şimdi 'Giriş Yap' butonuna basarak girebilirsin.");
-      }
+      const { data, error } = await _supabase.auth.signUp({ email: email, password: pass });
+      if(error) { authError.textContent = error.message; }
+      else { alert("Kayıt başarılı! Şimdi 'Giriş Yap' butonuna basarak girebilirsin."); }
       btnSignup.textContent = "Kayıt Ol";
     };
 
-
-    // BAŞLAT
     initApp();
 
   </script>
