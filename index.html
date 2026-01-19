@@ -39,13 +39,18 @@
     .btn-primary { background:var(--accent); color:#000; border-color:var(--accent); font-weight:600; }
     .fab { position: fixed; bottom: 75px; right: 20px; width: 56px; height: 56px; background: var(--accent); color: #000; border-radius: 50%; display: grid; place-items: center; font-size: 30px; box-shadow: 0 10px 30px rgba(0,0,0,.35); z-index: 90; border:none; cursor: pointer; }
 
-    /* Takvim Başlığı için de kullanıyoruz */
-    .daily-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    
-    .date-display { text-align: center; }
+    .daily-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; } /* Margin azaltıldı */
+    .date-display { text-align: center; display: flex; flex-direction: column; align-items: center; }
     .date-big { font-size: 18px; font-weight: bold; }
     .date-small { font-size: 13px; color: var(--muted); }
     .arrow-btn { background: transparent; border: none; color: var(--text); font-size: 24px; padding: 10px; cursor: pointer; }
+    
+    /* BUGÜN'E DÖN BUTONU */
+    .today-btn { 
+      background: none; border: 1px solid var(--line); color: var(--accent); 
+      font-size: 11px; padding: 4px 10px; border-radius: 20px; 
+      margin-bottom: 20px; cursor: pointer; display: inline-block;
+    }
 
     .task-card { background: var(--card); border-left: 4px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 12px; border: 1px solid var(--line); }
     .task-card.termin { border-left-color: var(--frame-termin); }
@@ -115,7 +120,10 @@
     </div>
   </div>
 
-  <div id="appWrap" class="app-container" style="display:none;">
+  <div id="appWrap" class="app-container" style="display:none;" 
+       ontouchstart="handleTouchStart(event)" 
+       ontouchend="handleTouchEnd(event)">
+       
     <div id="pageContainer" class="page-content"></div>
     <button id="fabBtn" class="fab">+</button>
     <nav class="bottom-nav">
@@ -160,6 +168,10 @@
     let currentModalDest = 'day';
     let dragSrcEl = null;
     let editState = null;
+    
+    // SWIPE DEĞİŞKENLERİ
+    let touchStartX = 0;
+    let touchEndX = 0;
 
     const appWrap = document.getElementById('appWrap');
     const authOverlay = document.getElementById('authOverlay');
@@ -207,6 +219,37 @@
       renderCurrentPage();
     }
 
+    // --- SWIPE MANTIĞI ---
+    function handleTouchStart(e) {
+      touchStartX = e.changedTouches[0].screenX;
+    }
+
+    function handleTouchEnd(e) {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    }
+
+    function handleSwipe() {
+      // Sadece Günlük Sayfada Çalışsın
+      if (currentPage !== 'daily') return;
+      
+      const threshold = 50; // Ne kadar kaydırınca algılasın?
+      if (touchEndX < touchStartX - threshold) {
+        // Sola kaydır (İleri git)
+        changeDay(1);
+      }
+      if (touchEndX > touchStartX + threshold) {
+        // Sağa kaydır (Geri git)
+        changeDay(-1);
+      }
+    }
+    
+    // --- BUGÜNE GİT ---
+    function goToToday(){
+      selectedDate = new Date();
+      renderCurrentPage();
+    }
+
     function router(page){
       currentPage = page;
       document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
@@ -232,19 +275,36 @@
 
     function renderDaily(){
       const k = dayKey(selectedDate);
+      const isToday = dayKey(new Date()) === k; // Bugün mü kontrolü
       const items = (db.days[k] || []);
+      
+      // HEADER: Tarih + Bugün Butonu
       const header = document.createElement('div');
       header.className = 'daily-header';
-      header.innerHTML = `<button class="arrow-btn" onclick="changeDay(-1)">❮</button><div class="date-display"><div class="date-big">${selectedDate.toLocaleDateString('tr-TR', {day:'numeric', month:'long'})}</div><div class="date-small">${selectedDate.toLocaleDateString('tr-TR', {weekday:'long', year:'numeric'})}</div></div><button class="arrow-btn" onclick="changeDay(1)">❯</button>`;
+      header.innerHTML = `
+        <button class="arrow-btn" onclick="changeDay(-1)">❮</button>
+        <div class="date-display">
+          <div class="date-big">${selectedDate.toLocaleDateString('tr-TR', {day:'numeric', month:'long'})}</div>
+          <div class="date-small">${selectedDate.toLocaleDateString('tr-TR', {weekday:'long', year:'numeric'})}</div>
+        </div>
+        <button class="arrow-btn" onclick="changeDay(1)">❯</button>
+      `;
       pageContainer.appendChild(header);
-      if(items.length === 0) pageContainer.innerHTML += `<div style="text-align:center; color:var(--muted); margin-top:50px;">Bugün için plan yok.</div>`;
+
+      // EĞER BUGÜN DEĞİLSE "BUGÜNE DÖN" BUTONUNU GÖSTER
+      if(!isToday) {
+        const todayContainer = document.createElement('div');
+        todayContainer.style.textAlign = 'center';
+        todayContainer.innerHTML = `<button class="today-btn" onclick="goToToday()">Bugün'e Dön ↺</button>`;
+        pageContainer.appendChild(todayContainer);
+      }
+
+      if(items.length === 0) pageContainer.innerHTML += `<div style="text-align:center; color:var(--muted); margin-top:30px;">Bugün için plan yok.</div>`;
       else items.forEach(item => pageContainer.appendChild(createTaskCard(item, 'day', k)));
     }
     
-    // GÜN VE AY DEĞİŞTİRME FONKSİYONLARI
     function changeDay(delta){ selectedDate.setDate(selectedDate.getDate() + delta); renderCurrentPage(); }
     
-    // YENİ EKLENEN FONKSİYON: Ay Değiştirme
     function changeMonth(delta){ 
         selectedDate.setMonth(selectedDate.getMonth() + delta); 
         renderCurrentPage(); 
@@ -255,7 +315,6 @@
       const firstDay = new Date(year, month, 1); const startDay = (firstDay.getDay() + 6) % 7; 
       const daysInMonth = new Date(year, month+1, 0).getDate();
       
-      // HEADER DÜZENLENDİ: OK TUŞLARI EKLENDİ
       const header = document.createElement('div');
       header.className = 'daily-header';
       header.innerHTML = `
@@ -292,7 +351,6 @@
       }
       pageContainer.appendChild(grid);
       
-      // Bottom Notes
       const bottomSection = document.createElement('div');
       const selKey = dayKey(selectedDate);
       const selItems = (db.days[selKey] || []).filter(x => ['termin','hedef'].includes(x.type));
