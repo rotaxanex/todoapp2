@@ -72,7 +72,7 @@
     .check-circle.checked { background: var(--accent); border-color: var(--accent); color: #000; font-weight: bold; font-size: 14px; }
     .task-content { flex:1; cursor: pointer; }
 
-    /* TAKVİM */
+    /* TAKVİM GRID */
     .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 15px; }
     .cal-cell { aspect-ratio: 1; background: var(--card); border-radius: 8px; border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; }
     .cal-cell.today { border-color: var(--accent); color: var(--accent); font-weight: bold; }
@@ -83,7 +83,19 @@
     /* HABITS */
     .habit-row { display: flex; align-items: center; justify-content: space-between; background: var(--card); padding: 14px; border-radius: 12px; margin-bottom: 8px; border: 1px solid var(--line); }
     .habit-left { display: flex; align-items: center; gap: 12px; flex:1; cursor:pointer; }
-    .streak-badge { font-size:11px; background:#2a2a2f; padding:2px 6px; border-radius:6px; color:#fbbf24; margin-left:8px; display:flex; align-items:center; gap:3px; }
+    /* Kartın üzerindeki Streak Yazısı */
+    .streak-badge { 
+      font-size:12px; 
+      background:#2a2a2f; 
+      padding:4px 8px; 
+      border-radius:8px; 
+      color:#fbbf24; 
+      margin-left:auto; /* Sağa yasla */
+      display:flex; 
+      align-items:center; 
+      gap:4px; 
+      border: 1px solid #444;
+    }
 
     /* TAGS */
     .tag-row { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--card); border-radius: 10px; margin-bottom: 8px; cursor: grab; }
@@ -93,16 +105,20 @@
 
     /* MODAL */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: none; align-items: flex-end; }
-    .modal-sheet { width: 100%; background: #1c1c1e; border-radius: 20px 20px 0 0; padding: 20px; animation: slideUp 0.3s ease; display:flex; flex-direction:column; max-height:80vh; }
+    .modal-sheet { width: 100%; background: #1c1c1e; border-radius: 20px 20px 0 0; padding: 20px; animation: slideUp 0.3s ease; display:flex; flex-direction:column; max-height:85vh; }
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .modal-input { width: 100%; padding: 12px; background: #000; border: 1px solid var(--line); color: #fff; border-radius: 10px; margin-bottom: 10px; }
     .modal-row { display: flex; gap: 10px; margin-bottom: 10px; }
     .modal-select { flex: 1; padding: 10px; background: #000; border: 1px solid var(--line); color: #fff; border-radius: 8px; }
 
     /* HABIT DETAIL MODAL STYLES */
+    .habit-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
     .habit-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top:15px; }
-    .habit-cal-cell { aspect-ratio:1; background:#000; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:12px; color:#555; }
-    .habit-cal-cell.done { background:var(--accent); color:#000; font-weight:bold; }
+    .habit-cal-cell { 
+        aspect-ratio:1; background:#000; border-radius:6px; border:1px solid #333;
+        display:flex; align-items:center; justify-content:center; font-size:12px; color:#555; 
+    }
+    .habit-cal-cell.done { background:var(--accent); color:#000; font-weight:bold; border-color:var(--accent); }
 
     #dialogOverlay { display:none; }
 
@@ -178,11 +194,22 @@
 
   <div id="habitModal" class="modal-overlay">
     <div class="modal-sheet" style="max-height: 90vh; overflow-y:auto;">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3 id="habitDetailTitle" style="margin:0;">Alışkanlık Detayı</h3>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div style="flex:1"></div>
         <button onclick="document.getElementById('habitModal').style.display='none'" style="background:none; border:none; color:#555; font-size:20px;">✕</button>
       </div>
-      <div id="habitDetailStats" style="margin-top:15px; font-size:14px; color:var(--muted);"></div>
+      
+      <div class="habit-header">
+        <button class="arrow-btn" onclick="changeHabitMonth(-1)">❮</button>
+        <div style="text-align:center;">
+            <h3 id="habitDetailTitle" style="margin:0;">Alışkanlık</h3>
+            <div id="habitDetailMonth" style="font-size:12px; color:var(--muted); margin-top:2px;"></div>
+        </div>
+        <button class="arrow-btn" onclick="changeHabitMonth(1)">❯</button>
+      </div>
+
+      <div id="habitDetailStats" style="text-align:center; margin-bottom:15px; font-weight:bold; color:var(--accent);"></div>
+      
       <div id="habitCalendar" class="habit-cal-grid"></div>
     </div>
   </div>
@@ -204,6 +231,10 @@
     // SWIPE
     let touchStartX = 0;
     let touchEndX = 0;
+
+    // HABIT DETAY İÇİN
+    let selectedHabitId = null;
+    let selectedHabitMonth = new Date(); // Alışkanlık takviminde gezilen ay
 
     const appWrap = document.getElementById('appWrap');
     const authOverlay = document.getElementById('authOverlay');
@@ -268,7 +299,7 @@
       const map = {'daily':0, 'calendar':1, 'inbox':2, 'habits':3, 'settings':4};
       document.querySelectorAll('.nav-item')[map[page]].classList.add('active');
       
-      // FAB GÖRÜNÜM AYARI: Sadece Daily, Calendar, Inbox sayfalarında göster
+      // FAB GÖRÜNÜM AYARI
       const showFab = ['daily', 'calendar', 'inbox'].includes(page);
       document.getElementById('fabBtn').style.display = showFab ? 'grid' : 'none';
       
@@ -391,12 +422,13 @@
       items.forEach(item => pageContainer.appendChild(createTaskCard(item, 'inbox', null)));
     }
 
+    // --- HABITS ---
     function renderHabits(){
       const header = document.createElement('div');
       header.style.display='flex'; header.style.justifyContent='space-between'; header.style.alignItems='center';
       header.innerHTML = `<h2>Alışkanlıklar</h2><button class="btn" onclick="addNewHabit()">+ Ekle</button>`;
       pageContainer.appendChild(header);
-      pageContainer.innerHTML += `<div style="color:var(--muted); margin-bottom:15px; font-size:12px;">Üzerine tıkla, serini gör.</div>`;
+      pageContainer.innerHTML += `<div style="color:var(--muted); margin-bottom:15px; font-size:12px;">Üzerine tıkla, geçmişi gör.</div>`;
 
       const todayK = dayKey(new Date());
 
@@ -413,7 +445,7 @@
             <div style="flex:1;">
               <div style="${isDoneToday ? 'opacity:0.5' : ''}">${h.name}</div>
             </div>
-            ${streak > 0 ? `<div class="streak-badge">🔥 ${streak}</div>` : ''}
+            ${streak > 0 ? `<div class="streak-badge">🔥 ${streak} Gün</div>` : ''}
           </div>
           <button style="background:none; border:none; color:#555;" onclick="deleteHabit('${h.id}')">🗑</button>
         `;
@@ -449,23 +481,57 @@
       return streak;
     }
 
+    // --- ALIŞKANLIK DETAY & TAKVİM ---
     function openHabitDetail(id){
       const h = db.habits.find(x => x.id === id);
       if(!h) return;
+      selectedHabitId = id;
+      selectedHabitMonth = new Date(); // Bugünü baz alarak aç
+      renderHabitDetailModal();
+      document.getElementById('habitModal').style.display = 'flex';
+    }
+
+    function changeHabitMonth(delta){
+      selectedHabitMonth.setMonth(selectedHabitMonth.getMonth() + delta);
+      renderHabitDetailModal();
+    }
+
+    function renderHabitDetailModal(){
+      const h = db.habits.find(x => x.id === selectedHabitId);
+      if(!h) return;
+
       document.getElementById('habitDetailTitle').textContent = h.name;
+      document.getElementById('habitDetailMonth').textContent = selectedHabitMonth.toLocaleDateString('tr-TR', {month:'long', year:'numeric'});
+      
       const streak = calculateStreak(h.history);
-      document.getElementById('habitDetailStats').textContent = `Mevcut Seri: ${streak} gün`;
+      document.getElementById('habitDetailStats').textContent = `🔥 Güncel Seri: ${streak} Gün`;
+
       const calGrid = document.getElementById('habitCalendar');
       calGrid.innerHTML = '';
-      for(let i=34; i>=0; i--){
-        const d = new Date(); d.setDate(d.getDate() - i);
-        const k = dayKey(d); const isDone = (h.history || []).includes(k);
+      
+      // GÜNLER BAŞLIĞI
+      ['Pt','Sa','Ça','Pe','Cu','Ct','Pa'].forEach(d => calGrid.innerHTML += `<div style="text-align:center; font-size:10px; color:var(--muted);">${d}</div>`);
+
+      const year = selectedHabitMonth.getFullYear();
+      const month = selectedHabitMonth.getMonth();
+      const firstDay = new Date(year, month, 1);
+      const startDay = (firstDay.getDay() + 6) % 7; 
+      const daysInMonth = new Date(year, month+1, 0).getDate();
+
+      // Boşluklar
+      for(let i=0; i<startDay; i++) calGrid.innerHTML += `<div></div>`;
+
+      // Günler
+      for(let d=1; d<=daysInMonth; d++){
+        const current = new Date(year, month, d);
+        const k = dayKey(current);
+        const isDone = (h.history || []).includes(k);
+        
         const cell = document.createElement('div');
         cell.className = `habit-cal-cell ${isDone ? 'done' : ''}`;
-        cell.textContent = d.getDate();
+        cell.textContent = d;
         calGrid.appendChild(cell);
       }
-      document.getElementById('habitModal').style.display = 'flex';
     }
 
     function renderSettings(){
