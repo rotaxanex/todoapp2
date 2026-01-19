@@ -484,10 +484,24 @@
     function removeTag(name){
       customConfirm("Tag Sil", `"${name}" etiketi silinsin mi?`, () => { db.tags = db.tags.filter(t => t.name !== name); saveDB(); });
     }
+   // --- ZORLA ÇIKIŞ FONKSİYONU (Kesin Çözüm) ---
     function logoutApp(){
-      customConfirm("Çıkış Yap", "Hesabından çıkış yapmak istiyor musun?", async () => { await _supabase.auth.signOut(); window.location.reload(); });
+      customConfirm("Çıkış Yap", "Hesabından çıkış yapmak istiyor musun?", async () => {
+        try {
+          // 1. Supabase sunucusuna çıkış isteği at
+          await _supabase.auth.signOut();
+        } catch (error) {
+          console.log("Sunucu çıkış hatası (önemsiz):", error);
+        } finally {
+          // 2. Hata verse bile tarayıcıdaki tüm verileri ve oturum anahtarlarını SİL
+          localStorage.clear(); 
+          sessionStorage.clear();
+          
+          // 3. Sayfayı yenile (Artık giriş ekranı gelmek zorunda)
+          window.location.reload();
+        }
+      });
     }
-
     // --- ORTAK ---
     function createTaskCard(item, source, sourceKey){
       const el = document.createElement('div');
