@@ -7,8 +7,8 @@
   <title>Minimal To-Do App</title>
   
   <link rel="manifest" href="manifest.json" />
-  <link rel="icon" type="image/png" href="Icon-512.png" />
-  <link rel="apple-touch-icon" href="Icon-512.png" />
+  <link rel="icon" type="image/png" href="icon-512.png" />
+  <link rel="apple-touch-icon" href="icon-512.png" />
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -16,7 +16,6 @@
     :root{
       --bg:#0f0f10; --card:#17171a; --muted:#a3a3a3; --text:#f5f5f5; --line:#2a2a2f; --accent:#7dd3fc;
       --nav-height: 60px;
-      --frame-termin:#fb7185; --frame-hedef:#60a5fa; --frame-gorev:#34d399;
     }
     *{ box-sizing:border-box; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
     html, body{ height:100%; margin:0; background:var(--bg); color:var(--text); overflow:hidden; }
@@ -45,18 +44,26 @@
     .date-small { font-size: 13px; color: var(--muted); }
     .arrow-btn { background: transparent; border: none; color: var(--text); font-size: 24px; padding: 10px; cursor: pointer; }
     
-    /* BUGÜN'E DÖN BUTONU */
     .today-btn { 
       background: none; border: 1px solid var(--line); color: var(--accent); 
       font-size: 11px; padding: 4px 10px; border-radius: 20px; 
       margin-bottom: 20px; cursor: pointer; display: inline-block;
     }
 
-    .task-card { background: var(--card); border-left: 4px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 12px; border: 1px solid var(--line); }
-    .task-card.termin { border-left-color: var(--frame-termin); }
-    .task-card.hedef { border-left-color: var(--frame-hedef); }
-    .task-card.gorev { border-left-color: var(--frame-gorev); }
+    /* KART STİLİ GÜNCELLENDİ: Border rengi JS'den gelecek */
+    .task-card { 
+      background: var(--card); 
+      border-radius: 12px; 
+      padding: 12px; 
+      margin-bottom: 10px; 
+      display: flex; 
+      align-items: flex-start; 
+      gap: 12px; 
+      border: 1px solid var(--line); 
+      /* Sol border artık JS ile verilecek */
+    }
     .task-card.done { opacity: 0.5; }
+    
     .check-circle { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--muted); flex-shrink: 0; display: grid; place-items: center; cursor: pointer; margin-top: 2px; }
     .check-circle.checked { background: var(--accent); border-color: var(--accent); color: #000; font-weight: bold; font-size: 14px; }
     .task-content { flex:1; cursor: pointer; }
@@ -169,7 +176,7 @@
     let dragSrcEl = null;
     let editState = null;
     
-    // SWIPE DEĞİŞKENLERİ
+    // SWIPE
     let touchStartX = 0;
     let touchEndX = 0;
 
@@ -219,34 +226,16 @@
       renderCurrentPage();
     }
 
-    // --- SWIPE MANTIĞI ---
-    function handleTouchStart(e) {
-      touchStartX = e.changedTouches[0].screenX;
-    }
-
-    function handleTouchEnd(e) {
-      touchEndX = e.changedTouches[0].screenX;
-      handleSwipe();
-    }
-
+    function handleTouchStart(e) { touchStartX = e.changedTouches[0].screenX; }
+    function handleTouchEnd(e) { touchEndX = e.changedTouches[0].screenX; handleSwipe(); }
     function handleSwipe() {
-      // Sadece Günlük Sayfada Çalışsın (Takvimde karışıklık olmasın)
       if (currentPage !== 'daily') return;
-      
       const threshold = 50; 
-      if (touchEndX < touchStartX - threshold) {
-        changeDay(1); // Sola kaydır (İleri git)
-      }
-      if (touchEndX > touchStartX + threshold) {
-        changeDay(-1); // Sağa kaydır (Geri git)
-      }
+      if (touchEndX < touchStartX - threshold) changeDay(1); 
+      if (touchEndX > touchStartX + threshold) changeDay(-1); 
     }
     
-    // --- BUGÜNE GİT ---
-    function goToToday(){
-      selectedDate = new Date();
-      renderCurrentPage();
-    }
+    function goToToday(){ selectedDate = new Date(); renderCurrentPage(); }
 
     function router(page){
       currentPage = page;
@@ -300,11 +289,7 @@
     }
     
     function changeDay(delta){ selectedDate.setDate(selectedDate.getDate() + delta); renderCurrentPage(); }
-    
-    function changeMonth(delta){ 
-        selectedDate.setMonth(selectedDate.getMonth() + delta); 
-        renderCurrentPage(); 
-    }
+    function changeMonth(delta){ selectedDate.setMonth(selectedDate.getMonth() + delta); renderCurrentPage(); }
 
     function renderCalendar(){
       const year = selectedDate.getFullYear(); const month = selectedDate.getMonth();
@@ -320,7 +305,6 @@
       `;
       pageContainer.appendChild(header);
 
-      // --- TAKVİM İÇİN BUGÜNE DÖN BUTONU ---
       const k = dayKey(selectedDate);
       const isToday = dayKey(new Date()) === k;
       if(!isToday){
@@ -329,7 +313,6 @@
         todayContainer.innerHTML = `<button class="today-btn" onclick="goToToday()">Bugün'e Dön ↺</button>`;
         pageContainer.appendChild(todayContainer);
       }
-      // -------------------------------------
 
       const grid = document.createElement('div'); grid.className = 'calendar-grid';
       ['Pt','Sa','Ça','Pe','Cu','Ct','Pa'].forEach(d => grid.innerHTML += `<div style="text-align:center; font-size:12px; color:var(--muted);">${d}</div>`);
@@ -338,9 +321,17 @@
       for(let d=1; d<=daysInMonth; d++){
         const current = new Date(year, month, d); const currentK = dayKey(current);
         const dayItems = db.days[currentK] || [];
+        
         let dotsHtml = '';
-        if(dayItems.some(x => x.type === 'termin' && !x.done)) dotsHtml += `<span class="dot" style="background:var(--frame-termin)"></span>`;
-        if(dayItems.some(x => x.type === 'hedef' && !x.done)) dotsHtml += `<span class="dot" style="background:var(--frame-hedef)"></span>`;
+        if(dayItems.length > 0) {
+            // Renkli noktalar yerine sadece 2 tane genel nokta
+            // Veya etiket rengine göre nokta (daha gelişmiş olur ama karmaşıklaşabilir)
+            // Şimdilik önemli tipler için nokta koyalım:
+            if(dayItems.some(x => x.type === 'termin' && !x.done)) dotsHtml += `<span class="dot" style="background:var(--frame-termin)"></span>`;
+            if(dayItems.some(x => x.type === 'hedef' && !x.done)) dotsHtml += `<span class="dot" style="background:var(--frame-hedef)"></span>`;
+            // Normal görevler için gri nokta
+            if(dayItems.some(x => x.type === 'gorev' && !x.done)) dotsHtml += `<span class="dot" style="background:var(--muted)"></span>`;
+        }
         
         const isCurrentToday = currentK === dayKey(new Date());
         const isSelected = currentK === dayKey(selectedDate);
@@ -348,21 +339,16 @@
         const cell = document.createElement('div'); 
         cell.className = `cal-cell ${isCurrentToday ? 'today' : ''} ${isSelected ? 'active-day' : ''}`;
         cell.innerHTML = `<div>${d}</div><div class="dots">${dotsHtml}</div>`;
-        
-        cell.onclick = () => { 
-            selectedDate = current; 
-            renderCurrentPage(); 
-        };
-        
+        cell.onclick = () => { selectedDate = current; renderCurrentPage(); };
         grid.appendChild(cell);
       }
       pageContainer.appendChild(grid);
       
       const bottomSection = document.createElement('div');
       const selKey = dayKey(selectedDate);
-      const selItems = (db.days[selKey] || []).filter(x => ['termin','hedef'].includes(x.type));
+      const selItems = (db.days[selKey] || []); // Tüm notları göster (önemli filtreyi kaldırdım, daha mantıklı)
       
-      bottomSection.innerHTML = `<div style="margin-top:20px; border-top:1px solid var(--line); padding-top:10px; color:var(--muted);">${selectedDate.toLocaleDateString('tr-TR')} - Önemli Notlar</div>`;
+      bottomSection.innerHTML = `<div style="margin-top:20px; border-top:1px solid var(--line); padding-top:10px; color:var(--muted);">${selectedDate.toLocaleDateString('tr-TR')} - Görevler</div>`;
       if(selItems.length===0) {
         bottomSection.innerHTML += `<div style="font-size:12px; margin-top:5px; color:#555">Kayıt yok.</div>`;
       } else {
@@ -396,15 +382,12 @@
       const adder = document.createElement('div'); adder.style.marginBottom='15px';
       adder.innerHTML = `<div style="display:flex; gap:10px;"><input type="text" id="newTagName" placeholder="Yeni tag ismi" style="flex:1; padding:8px; background:#000; border:1px solid #333; color:#fff; border-radius:8px;"><input type="color" id="newTagColor" value="#7dd3fc" style="width:40px; height:40px; border:none; background:none;"><button class="btn" onclick="addTag()">Ekle</button></div>`;
       pageContainer.appendChild(adder);
-      
       const listContainer = document.createElement('div'); listContainer.id='tagListContainer'; 
       pageContainer.appendChild(listContainer);
-
       if(db.tags && db.tags.length > 0){
         db.tags.forEach((t, index) => {
           const row = document.createElement('div'); row.className = 'tag-row'; row.draggable = true; row.dataset.index = index;
           row.innerHTML = `<div style="font-size:18px; color:#555; cursor:grab; margin-right:10px;">☰</div><div class="color-dot" style="background:${t.color}"></div><div style="flex:1">${t.name}</div><button style="background:none; border:none; color:#555;" onclick="removeTag('${t.name}')">🗑</button>`;
-          
           row.addEventListener('dragstart', function(e) { dragSrcEl = this; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/html', this.innerHTML); this.classList.add('dragging'); });
           row.addEventListener('dragover', function(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; this.classList.add('drag-over'); return false; });
           row.addEventListener('dragleave', function() { this.classList.remove('drag-over'); });
@@ -421,7 +404,6 @@
           listContainer.appendChild(row);
         });
       } else { listContainer.innerHTML = `<div style="color:#555; font-size:13px;">Hiç tag yok.</div>`; }
-      
       const exitBtn = document.createElement('button');
       exitBtn.className = "btn";
       exitBtn.style.cssText = "width:100%; margin-top:30px; border-color:#fb7185; color:#fb7185;";
@@ -439,9 +421,18 @@
     function deleteTask(id, source, key){ customConfirm("Sil", "Silinsin mi?", () => { if(source==='inbox') db.inbox=db.inbox.filter(x=>x.id!==id); else { db.days[key]=db.days[key].filter(x=>x.id!==id); if(db.days[key].length===0) delete db.days[key]; } saveDB(); }); }
 
     function createTaskCard(item, source, sourceKey){
-      const el = document.createElement('div'); el.className = `task-card ${item.type||'gorev'} ${item.done ? 'done' : ''}`;
-      const tagObj = db.tags.find(t=>t.name===item.tag); const tagColor = tagObj ? tagObj.color : '#666';
+      const el = document.createElement('div');
+      el.className = `task-card ${item.done ? 'done' : ''}`;
       
+      const tagObj = db.tags.find(t=>t.name===item.tag);
+      const tagColor = tagObj ? tagObj.color : 'var(--line)';
+
+      // RENKLİ KART AYARI
+      el.style.borderLeft = `4px solid ${tagColor}`;
+      // Arka plana çok hafif renk ver (şeffaf)
+      // Hex koduna 20 (yaklaşık %12 opacity) ekleyerek şeffaflık veriyoruz
+      el.style.background = `linear-gradient(90deg, ${tagColor}15 0%, var(--card) 100%)`;
+
       el.innerHTML = `
         <div class="check-circle ${item.done ? 'checked' : ''}">✓</div>
         <div class="task-content" onclick="openEditTask('${item.id}', '${source}', '${sourceKey}')">
