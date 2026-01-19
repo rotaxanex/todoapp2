@@ -432,9 +432,11 @@
     }
 
     // --- SAYFA 5: AYARLAR (TAGS) ---
+        // --- AYARLAR SAYFASI ---
     function renderSettings(){
       pageContainer.innerHTML = `<h2>Tag Ayarları</h2>`;
       
+      // Tag Ekleme Kısmı
       const adder = document.createElement('div');
       adder.style.marginBottom='15px';
       adder.innerHTML = `
@@ -446,15 +448,35 @@
       `;
       pageContainer.appendChild(adder);
 
-      (db.tags||[]).forEach(t => {
-        pageContainer.innerHTML += `
-          <div class="tag-row">
-            <div class="color-dot" style="background:${t.color}"></div>
-            <div style="flex:1">${t.name}</div>
-            <button style="background:none; border:none; color:#555;" onclick="removeTag('${t.name}')">🗑</button>
-          </div>
-        `;
+      // Tag Listesi
+      if(db.tags && db.tags.length > 0){
+        db.tags.forEach(t => {
+          pageContainer.innerHTML += `
+            <div class="tag-row">
+              <div class="color-dot" style="background:${t.color}"></div>
+              <div style="flex:1">${t.name}</div>
+              <button style="background:none; border:none; color:#555;" onclick="removeTag('${t.name}')">🗑</button>
+            </div>
+          `;
+        });
+      } else {
+        pageContainer.innerHTML += `<div style="color:#555; font-size:13px;">Hiç tag yok.</div>`;
+      }
+      
+      // DÜZELTİLEN ÇIKIŞ BUTONU BURADA:
+      pageContainer.innerHTML += `<button class="btn" style="width:100%; margin-top:30px; border-color:#fb7185; color:#fb7185;" onclick="logoutApp()">Çıkış Yap</button>`;
+    }
+    // --- GÜVENLİ ÇIKIŞ FONKSİYONU ---
+    function logoutApp(){
+      // Senin özel diyalog kutunu kullanır
+      customConfirm("Çıkış Yap", "Hesabından çıkış yapmak istiyor musun?", async () => {
+        // Önce Supabase'den çıkışı bekle
+        await _supabase.auth.signOut();
+        // Sonra sayfayı yenile (Giriş ekranına döner)
+        window.location.reload();
       });
+    }
+
       
       pageContainer.innerHTML += `<button class="btn" style="width:100%; margin-top:30px; border-color:#fb7185; color:#fb7185;" onclick="_supabase.auth.signOut(); location.reload();">Çıkış Yap</button>`;
     }
