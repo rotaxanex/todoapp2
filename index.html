@@ -7,8 +7,8 @@
   <title>Minimal To-Do App</title>
   
   <link rel="manifest" href="manifest.json" />
-  <link rel="icon" type="image/png" href="icon-512.png" />
-  <link rel="apple-touch-icon" href="icon-512.png" />
+  <link rel="icon" type="image/png" href="Icon-512.png" />
+  <link rel="apple-touch-icon" href="Icon-512.png" />
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -213,14 +213,21 @@
 
     async function initApp(){
       const { data: { session } } = await _supabase.auth.getSession();
-      if(session) handleSession(session);
+      if(session) {
+        handleSession(session);
+      } else {
+        authOverlay.style.display = 'flex';
+      }
     }
 
     async function handleSession(session){
       currentUser = session.user;
       authOverlay.style.display = 'none';
       appWrap.style.display = 'flex';
+      
       await loadRemoteDB();
+      
+      // İlk yüklemede varsayılan tag yoksa ekle
       if(!db.tags || db.tags.length===0) {
         db.tags = [
           { name:'akademik', color:'#7dd3fc' },
@@ -233,19 +240,38 @@
     }
 
     async function loadRemoteDB(){
+      // Önce yerel yedeği yükle (hız için)
       const local = localStorage.getItem('mini_todo_v1');
-      if(local) db = JSON.parse(local);
-      const { data } = await _supabase.from('user_data').select('content').eq('id', currentUser.id).single();
+      if(local) {
+        try { db = JSON.parse(local); } catch(e){}
+      }
+
+      // Sunucudan çek
+      const { data, error } = await _supabase
+        .from('user_data')
+        .select('content')
+        .eq('id', currentUser.id)
+        .single();
+
       if(data && data.content) {
         db = data.content;
         localStorage.setItem('mini_todo_v1', JSON.stringify(db));
+      } else {
+        // Eğer sunucuda veri yoksa (Yeni Kullanıcı), yereldeki boş db'yi sunucuya yaz
+        // Bu senin 'SQL tablosu boş' sorununu çözer.
+        saveDB(); 
       }
     }
 
     function saveDB(){
       localStorage.setItem('mini_todo_v1', JSON.stringify(db));
       if(currentUser) {
-        _supabase.from('user_data').upsert({ id: currentUser.id, content: db, updated_at: new Date() }).then();
+        // SQL yapına uygun olarak: id, content, updated_at
+        _supabase.from('user_data').upsert({ 
+          id: currentUser.id, 
+          content: db, 
+          updated_at: new Date() 
+        }).then();
       }
       renderCurrentPage();
     }
@@ -524,7 +550,7 @@
       modalOverlay.style.display = 'none';
     };
 
-    // --- AUTH DÜZELTİLMİŞ (SAYFA YENİLEME EKLİ) ---
+    // --- AUTH HATA AYIKLAMALI ---
     const btnLogin = document.getElementById('btnLogin');
     const btnSignup = document.getElementById('btnSignup');
     const authError = document.getElementById('authError');
@@ -532,11 +558,22 @@
     btnLogin.onclick = async () => {
       const email = document.getElementById('authEmail').value;
       const pass = document.getElementById('authPass').value;
+      if(!email || !pass) { alert("E-posta ve şifre girin."); return; }
+      
       btnLogin.textContent = "Giriş Yapılıyor...";
       authError.textContent = "";
-      const { data, error } = await _supabase.auth.signInWithPassword({ email: email, password: pass });
-      if(error) { authError.textContent = error.message; btnLogin.textContent = "Giriş Yap"; }
-      else { window.location.reload(); }
+
+      const { data, error } = await _supabase.auth.signInWithPassword({ email, password: pass });
+      
+      if(error) { 
+        authError.textContent = error.message; 
+        btnLogin.textContent = "Giriş Yap";
+        // Şifre yanlışsa uyarı ver
+        if(error.message.includes("Invalid login")) alert("Hata: E-posta veya şifre yanlış.");
+        else alert("Hata: " + error.message);
+      } else { 
+        window.location.reload(); 
+      }
     };
     
     btnSignup.onclick = async () => {
@@ -544,8 +581,8 @@
       const pass = document.getElementById('authPass').value;
       btnSignup.textContent = "İşleniyor...";
       authError.textContent = "";
-      const { data, error } = await _supabase.auth.signUp({ email: email, password: pass });
-      if(error) { authError.textContent = error.message; }
+      const { data, error } = await _supabase.auth.signUp({ email, password: pass });
+      if(error) { authError.textContent = error.message; alert(error.message); }
       else { alert("Kayıt başarılı! Şimdi 'Giriş Yap' butonuna basarak girebilirsin."); }
       btnSignup.textContent = "Kayıt Ol";
     };
