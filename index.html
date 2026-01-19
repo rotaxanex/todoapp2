@@ -509,12 +509,14 @@
       saveDB();
     }
 
-        function dayKey(d){ 
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
-    }
+      // DÜZELTİLMİŞ FONKSİYON
+function dayKey(d){ 
+  const y = d.getFullYear(); // Yıl: 2023 (Yerel)
+  const m = String(d.getMonth() + 1).padStart(2, '0'); // Ay: 0 ise 1 yap (Manuel düzeltme)
+  const day = String(d.getDate()).padStart(2, '0'); // Gün: 25 (Yerel)
+  return `${y}-${m}-${day}`; // Sonuç: "2023-01-25"
+}
+
 
 
     // --- MODAL (EKLEME) ---
