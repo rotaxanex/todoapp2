@@ -7,8 +7,8 @@
   <title>Minimal To-Do App</title>
   
   <link rel="manifest" href="manifest.json" />
-  <link rel="icon" type="image/png" href="Icon-512.png" />
-  <link rel="apple-touch-icon" href="Icon-512.png" />
+  <link rel="icon" type="image/png" href="icon-512.png" />
+  <link rel="apple-touch-icon" href="icon-512.png" />
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -72,6 +72,7 @@
     .check-circle.checked { background: var(--accent); border-color: var(--accent); color: #000; font-weight: bold; font-size: 14px; }
     .task-content { flex:1; cursor: pointer; }
 
+    /* TAKVİM */
     .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 15px; }
     .cal-cell { aspect-ratio: 1; background: var(--card); border-radius: 8px; border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; }
     .cal-cell.today { border-color: var(--accent); color: var(--accent); font-weight: bold; }
@@ -79,20 +80,29 @@
     .dots { display: flex; gap: 2px; margin-top: 2px; }
     .dot { width: 4px; height: 4px; border-radius: 50%; }
 
+    /* HABITS */
     .habit-row { display: flex; align-items: center; justify-content: space-between; background: var(--card); padding: 14px; border-radius: 12px; margin-bottom: 8px; border: 1px solid var(--line); }
-    .habit-left { display: flex; align-items: center; gap: 12px; }
-    
+    .habit-left { display: flex; align-items: center; gap: 12px; flex:1; cursor:pointer; }
+    .streak-badge { font-size:11px; background:#2a2a2f; padding:2px 6px; border-radius:6px; color:#fbbf24; margin-left:8px; display:flex; align-items:center; gap:3px; }
+
+    /* TAGS */
     .tag-row { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--card); border-radius: 10px; margin-bottom: 8px; cursor: grab; }
     .tag-row.dragging { opacity: 0.5; border: 1px dashed #777; }
     .tag-row.drag-over { border: 2px dashed var(--accent); }
     .color-dot { width: 16px; height: 16px; border-radius: 50%; }
 
+    /* MODAL */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: none; align-items: flex-end; }
-    .modal-sheet { width: 100%; background: #1c1c1e; border-radius: 20px 20px 0 0; padding: 20px; animation: slideUp 0.3s ease; }
+    .modal-sheet { width: 100%; background: #1c1c1e; border-radius: 20px 20px 0 0; padding: 20px; animation: slideUp 0.3s ease; display:flex; flex-direction:column; max-height:80vh; }
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .modal-input { width: 100%; padding: 12px; background: #000; border: 1px solid var(--line); color: #fff; border-radius: 10px; margin-bottom: 10px; }
     .modal-row { display: flex; gap: 10px; margin-bottom: 10px; }
     .modal-select { flex: 1; padding: 10px; background: #000; border: 1px solid var(--line); color: #fff; border-radius: 8px; }
+
+    /* HABIT DETAIL MODAL STYLES */
+    .habit-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top:15px; }
+    .habit-cal-cell { aspect-ratio:1; background:#000; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:12px; color:#555; }
+    .habit-cal-cell.done { background:var(--accent); color:#000; font-weight:bold; }
 
     #dialogOverlay { display:none; }
 
@@ -163,6 +173,17 @@
         <button id="modalClose" class="btn" style="flex:1;">İptal</button>
         <button id="modalSave" class="btn btn-primary" style="flex:1;">Kaydet</button>
       </div>
+    </div>
+  </div>
+
+  <div id="habitModal" class="modal-overlay">
+    <div class="modal-sheet" style="max-height: 90vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 id="habitDetailTitle" style="margin:0;">Alışkanlık Detayı</h3>
+        <button onclick="document.getElementById('habitModal').style.display='none'" style="background:none; border:none; color:#555; font-size:20px;">✕</button>
+      </div>
+      <div id="habitDetailStats" style="margin-top:15px; font-size:14px; color:var(--muted);"></div>
+      <div id="habitCalendar" class="habit-cal-grid"></div>
     </div>
   </div>
 
@@ -246,7 +267,11 @@
       document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
       const map = {'daily':0, 'calendar':1, 'inbox':2, 'habits':3, 'settings':4};
       document.querySelectorAll('.nav-item')[map[page]].classList.add('active');
-      document.getElementById('fabBtn').style.display = (page === 'settings' || page === 'calendar') ? 'none' : 'grid';
+      
+      // FAB GÖRÜNÜM AYARI: Sadece Daily, Calendar, Inbox sayfalarında göster
+      const showFab = ['daily', 'calendar', 'inbox'].includes(page);
+      document.getElementById('fabBtn').style.display = showFab ? 'grid' : 'none';
+      
       renderCurrentPage();
     }
 
@@ -263,6 +288,8 @@
       const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0');
       return `${y}-${m}-${day}`;
     }
+
+    // --- RENDER SAYFALARI ---
 
     function renderDaily(){
       const k = dayKey(selectedDate);
@@ -328,10 +355,8 @@
         
         let dotsHtml = '';
         if(dayItems.length > 0) {
-            // Termin veya Hedef varsa o rengi bas
             if(dayItems.some(x => x.type === 'termin' && !x.done)) dotsHtml += `<span class="dot" style="background:var(--frame-termin)"></span>`;
             if(dayItems.some(x => x.type === 'hedef' && !x.done)) dotsHtml += `<span class="dot" style="background:var(--frame-hedef)"></span>`;
-            // Sadece normal görev varsa gri
             if(!dotsHtml && dayItems.some(x => !x.done)) dotsHtml += `<span class="dot" style="background:var(--muted)"></span>`;
         }
         
@@ -367,16 +392,80 @@
     }
 
     function renderHabits(){
+      const header = document.createElement('div');
+      header.style.display='flex'; header.style.justifyContent='space-between'; header.style.alignItems='center';
+      header.innerHTML = `<h2>Alışkanlıklar</h2><button class="btn" onclick="addNewHabit()">+ Ekle</button>`;
+      pageContainer.appendChild(header);
+      pageContainer.innerHTML += `<div style="color:var(--muted); margin-bottom:15px; font-size:12px;">Üzerine tıkla, serini gör.</div>`;
+
       const todayK = dayKey(new Date());
-      if(db.habitState.date !== todayK){ db.habitState = { date: todayK, doneIds: [] }; saveDB(); }
-      pageContainer.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center;"><h2>Alışkanlıklar</h2><button class="btn" onclick="addNewHabit()">+ Ekle</button></div><div style="color:var(--muted); margin-bottom:15px; font-size:12px;">Her gün sıfırlanır</div>`;
+
       (db.habits || []).forEach(h => {
-        const isDone = db.habitState.doneIds.includes(h.id);
-        const div = document.createElement('div'); div.className = 'habit-row';
-        div.innerHTML = `<div class="habit-left"><div class="check-circle ${isDone ? 'checked' : ''}">✓</div><span style="${isDone ? 'opacity:0.5' : ''}">${h.name}</span></div><button style="background:none; border:none; color:#555;" onclick="deleteHabit('${h.id}')">🗑</button>`;
-        div.querySelector('.check-circle').onclick = () => toggleHabit(h.id);
+        if(!h.history) h.history = [];
+        const isDoneToday = h.history.includes(todayK);
+        const streak = calculateStreak(h.history);
+
+        const div = document.createElement('div');
+        div.className = 'habit-row';
+        div.innerHTML = `
+          <div class="habit-left" onclick="openHabitDetail('${h.id}')">
+            <div class="check-circle ${isDoneToday ? 'checked' : ''}" style="margin-right:10px;">✓</div>
+            <div style="flex:1;">
+              <div style="${isDoneToday ? 'opacity:0.5' : ''}">${h.name}</div>
+            </div>
+            ${streak > 0 ? `<div class="streak-badge">🔥 ${streak}</div>` : ''}
+          </div>
+          <button style="background:none; border:none; color:#555;" onclick="deleteHabit('${h.id}')">🗑</button>
+        `;
+        const checkBtn = div.querySelector('.check-circle');
+        checkBtn.onclick = (e) => { e.stopPropagation(); toggleHabit(h.id); };
         pageContainer.appendChild(div);
       });
+    }
+
+    function toggleHabit(id){
+      const todayK = dayKey(new Date());
+      const h = db.habits.find(x => x.id === id);
+      if(!h) return;
+      if(!h.history) h.history = [];
+      if(h.history.includes(todayK)) h.history = h.history.filter(d => d !== todayK);
+      else h.history.push(todayK);
+      saveDB();
+    }
+
+    function calculateStreak(historyArray){
+      if(!historyArray || historyArray.length === 0) return 0;
+      const sorted = [...historyArray].sort().reverse();
+      const todayK = dayKey(new Date());
+      let streak = 0;
+      let checkDate = new Date();
+      if(sorted.includes(dayKey(checkDate))){ streak = 1; checkDate.setDate(checkDate.getDate() - 1); }
+      else { checkDate.setDate(checkDate.getDate() - 1); if(!sorted.includes(dayKey(checkDate))) return 0; }
+      while(true){
+        const k = dayKey(checkDate);
+        if(sorted.includes(k)){ if(k !== dayKey(new Date())) streak++; } else break;
+        checkDate.setDate(checkDate.getDate() - 1);
+      }
+      return streak;
+    }
+
+    function openHabitDetail(id){
+      const h = db.habits.find(x => x.id === id);
+      if(!h) return;
+      document.getElementById('habitDetailTitle').textContent = h.name;
+      const streak = calculateStreak(h.history);
+      document.getElementById('habitDetailStats').textContent = `Mevcut Seri: ${streak} gün`;
+      const calGrid = document.getElementById('habitCalendar');
+      calGrid.innerHTML = '';
+      for(let i=34; i>=0; i--){
+        const d = new Date(); d.setDate(d.getDate() - i);
+        const k = dayKey(d); const isDone = (h.history || []).includes(k);
+        const cell = document.createElement('div');
+        cell.className = `habit-cal-cell ${isDone ? 'done' : ''}`;
+        cell.textContent = d.getDate();
+        calGrid.appendChild(cell);
+      }
+      document.getElementById('habitModal').style.display = 'flex';
     }
 
     function renderSettings(){
@@ -417,31 +506,26 @@
     function addTag(){ const name = document.getElementById('newTagName').value.trim(); const color = document.getElementById('newTagColor').value; if(name){ db.tags.push({name, color}); saveDB(); } }
     function removeTag(name){ customConfirm("Tag Sil", `"${name}" silinsin mi?`, () => { db.tags = db.tags.filter(t => t.name !== name); saveDB(); }); }
     function logoutApp(){ customConfirm("Çıkış Yap", "Emin misin?", async () => { try{ await _supabase.auth.signOut(); }catch(e){} localStorage.clear(); window.location.reload(); }); }
-    function toggleHabit(id){ const s = new Set(db.habitState.doneIds); if(s.has(id)) s.delete(id); else s.add(id); db.habitState.doneIds = [...s]; saveDB(); }
+    
     function deleteHabit(id){ customConfirm("Sil", "Silinsin mi?", () => { db.habits = db.habits.filter(h => h.id !== id); saveDB(); }); }
-    function addNewHabit(){ customPrompt("Yeni Alışkanlık", "Örn: Kitap", (val) => { if(val && val.trim()) { db.habits = db.habits || []; db.habits.push({ id: Date.now().toString(), name: val.trim() }); saveDB(); } }); }
+    function addNewHabit(){ customPrompt("Yeni Alışkanlık", "Örn: Kitap", (val) => { if(val && val.trim()) { db.habits = db.habits || []; db.habits.push({ id: Date.now().toString(), name: val.trim(), history:[] }); saveDB(); } }); }
     function deleteTask(id, source, key){ customConfirm("Sil", "Silinsin mi?", () => { if(source==='inbox') db.inbox=db.inbox.filter(x=>x.id!==id); else { db.days[key]=db.days[key].filter(x=>x.id!==id); if(db.days[key].length===0) delete db.days[key]; } saveDB(); }); }
 
     function createTaskCard(item, source, sourceKey){
       const el = document.createElement('div');
       el.className = `task-card ${item.done ? 'done' : ''}`;
       
-      // 1. TÜR RENGİ (Çerçeve)
-      // Varsayılan (Gorev)
       let typeColor = 'var(--frame-gorev)';
       if(item.type === 'termin') typeColor = 'var(--frame-termin)';
       else if(item.type === 'hedef') typeColor = 'var(--frame-hedef)';
 
-      // 2. TAG RENGİ (Arka Plan - Hafif)
-      let tagColor = '#333'; // Varsayılan koyu
+      let tagColor = '#333';
       if(item.tag) {
          const t = db.tags.find(x => x.name === item.tag);
          if(t) tagColor = t.color;
       }
       
-      // UYGULAMA
       el.style.borderLeft = `4px solid ${typeColor}`;
-      // Gradient ile tag rengini çok hafif (%15 opaklık) basıyoruz
       el.style.background = `linear-gradient(90deg, ${tagColor}25 0%, var(--card) 100%)`;
 
       el.innerHTML = `
