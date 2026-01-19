@@ -597,21 +597,56 @@ function dayKey(d){
       modalOverlay.style.display = 'none';
     };
 
-    // --- AUTH ---
-    document.getElementById('btnLogin').onclick = async () => {
+        // --- AUTH (GİRİŞ VE KAYIT DÜZELTİLMİŞ) ---
+    const btnLogin = document.getElementById('btnLogin');
+    const btnSignup = document.getElementById('btnSignup');
+    const authError = document.getElementById('authError');
+
+    // Giriş Yap Butonu
+    btnLogin.onclick = async () => {
       const email = document.getElementById('authEmail').value;
       const pass = document.getElementById('authPass').value;
-      const { error } = await _supabase.auth.signInWithPassword({email, password:pass});
-      if(error) document.getElementById('authError').textContent = error.message;
+
+      // Butonun yazısını değiştir ki basıldığı anlaşılsın
+      btnLogin.textContent = "Giriş Yapılıyor...";
+      authError.textContent = "";
+
+      const { data, error } = await _supabase.auth.signInWithPassword({
+        email: email,
+        password: pass
+      });
+
+      if(error) {
+        // Hata varsa göster
+        authError.textContent = error.message;
+        btnLogin.textContent = "Giriş Yap";
+      } else {
+        // BAŞARILI! Sayfayı yenile ki veriler gelsin
+        window.location.reload();
+      }
     };
     
-    document.getElementById('btnSignup').onclick = async () => {
+    // Kayıt Ol Butonu
+    btnSignup.onclick = async () => {
       const email = document.getElementById('authEmail').value;
       const pass = document.getElementById('authPass').value;
-      const { error } = await _supabase.auth.signUp({email, password:pass});
-      if(error) document.getElementById('authError').textContent = error.message;
-      else alert("Kayıt başarılı! Giriş yapın.");
+
+      btnSignup.textContent = "İşleniyor...";
+      authError.textContent = "";
+
+      const { data, error } = await _supabase.auth.signUp({
+        email: email,
+        password: pass
+      });
+
+      if(error) {
+        authError.textContent = error.message;
+      } else {
+        alert("Kayıt başarılı! Şimdi 'Giriş Yap' butonuna basarak girebilirsin.");
+      }
+      btnSignup.textContent = "Kayıt Ol";
     };
+
 
     // BAŞLAT
     initApp();
