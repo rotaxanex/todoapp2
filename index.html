@@ -39,7 +39,7 @@
     .btn-primary { background:var(--accent); color:#000; border-color:var(--accent); font-weight:600; }
     .fab { position: fixed; bottom: 75px; right: 20px; width: 56px; height: 56px; background: var(--accent); color: #000; border-radius: 50%; display: grid; place-items: center; font-size: 30px; box-shadow: 0 10px 30px rgba(0,0,0,.35); z-index: 90; border:none; cursor: pointer; }
 
-    .daily-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; } /* Margin azaltıldı */
+    .daily-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
     .date-display { text-align: center; display: flex; flex-direction: column; align-items: center; }
     .date-big { font-size: 18px; font-weight: bold; }
     .date-small { font-size: 13px; color: var(--muted); }
@@ -230,17 +230,15 @@
     }
 
     function handleSwipe() {
-      // Sadece Günlük Sayfada Çalışsın
+      // Sadece Günlük Sayfada Çalışsın (Takvimde karışıklık olmasın)
       if (currentPage !== 'daily') return;
       
-      const threshold = 50; // Ne kadar kaydırınca algılasın?
+      const threshold = 50; 
       if (touchEndX < touchStartX - threshold) {
-        // Sola kaydır (İleri git)
-        changeDay(1);
+        changeDay(1); // Sola kaydır (İleri git)
       }
       if (touchEndX > touchStartX + threshold) {
-        // Sağa kaydır (Geri git)
-        changeDay(-1);
+        changeDay(-1); // Sağa kaydır (Geri git)
       }
     }
     
@@ -275,10 +273,9 @@
 
     function renderDaily(){
       const k = dayKey(selectedDate);
-      const isToday = dayKey(new Date()) === k; // Bugün mü kontrolü
+      const isToday = dayKey(new Date()) === k; 
       const items = (db.days[k] || []);
       
-      // HEADER: Tarih + Bugün Butonu
       const header = document.createElement('div');
       header.className = 'daily-header';
       header.innerHTML = `
@@ -291,7 +288,6 @@
       `;
       pageContainer.appendChild(header);
 
-      // EĞER BUGÜN DEĞİLSE "BUGÜNE DÖN" BUTONUNU GÖSTER
       if(!isToday) {
         const todayContainer = document.createElement('div');
         todayContainer.style.textAlign = 'center';
@@ -324,22 +320,33 @@
       `;
       pageContainer.appendChild(header);
 
+      // --- TAKVİM İÇİN BUGÜNE DÖN BUTONU ---
+      const k = dayKey(selectedDate);
+      const isToday = dayKey(new Date()) === k;
+      if(!isToday){
+        const todayContainer = document.createElement('div');
+        todayContainer.style.textAlign = 'center';
+        todayContainer.innerHTML = `<button class="today-btn" onclick="goToToday()">Bugün'e Dön ↺</button>`;
+        pageContainer.appendChild(todayContainer);
+      }
+      // -------------------------------------
+
       const grid = document.createElement('div'); grid.className = 'calendar-grid';
       ['Pt','Sa','Ça','Pe','Cu','Ct','Pa'].forEach(d => grid.innerHTML += `<div style="text-align:center; font-size:12px; color:var(--muted);">${d}</div>`);
       for(let i=0; i<startDay; i++) grid.innerHTML += `<div></div>`;
       
       for(let d=1; d<=daysInMonth; d++){
-        const current = new Date(year, month, d); const k = dayKey(current);
-        const dayItems = db.days[k] || [];
+        const current = new Date(year, month, d); const currentK = dayKey(current);
+        const dayItems = db.days[currentK] || [];
         let dotsHtml = '';
         if(dayItems.some(x => x.type === 'termin' && !x.done)) dotsHtml += `<span class="dot" style="background:var(--frame-termin)"></span>`;
         if(dayItems.some(x => x.type === 'hedef' && !x.done)) dotsHtml += `<span class="dot" style="background:var(--frame-hedef)"></span>`;
         
-        const isToday = k === dayKey(new Date());
-        const isSelected = k === dayKey(selectedDate);
+        const isCurrentToday = currentK === dayKey(new Date());
+        const isSelected = currentK === dayKey(selectedDate);
 
         const cell = document.createElement('div'); 
-        cell.className = `cal-cell ${isToday ? 'today' : ''} ${isSelected ? 'active-day' : ''}`;
+        cell.className = `cal-cell ${isCurrentToday ? 'today' : ''} ${isSelected ? 'active-day' : ''}`;
         cell.innerHTML = `<div>${d}</div><div class="dots">${dotsHtml}</div>`;
         
         cell.onclick = () => { 
