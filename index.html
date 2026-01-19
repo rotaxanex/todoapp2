@@ -52,7 +52,7 @@
     .task-card.done { opacity: 0.5; }
     .check-circle { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--muted); flex-shrink: 0; display: grid; place-items: center; cursor: pointer; margin-top: 2px; }
     .check-circle.checked { background: var(--accent); border-color: var(--accent); color: #000; font-weight: bold; font-size: 14px; }
-    .task-content { flex:1; cursor: pointer; } /* Tıklanabilir yapıldı */
+    .task-content { flex:1; cursor: pointer; }
 
     .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 15px; }
     .cal-cell { aspect-ratio: 1; background: var(--card); border-radius: 8px; border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; }
@@ -156,9 +156,7 @@
     let selectedDate = new Date();
     let currentModalDest = 'day';
     let dragSrcEl = null;
-    
-    // Düzenleme durumu için değişken
-    let editState = null; // { id, source, key }
+    let editState = null;
 
     const appWrap = document.getElementById('appWrap');
     const authOverlay = document.getElementById('authOverlay');
@@ -245,10 +243,17 @@
       const year = selectedDate.getFullYear(); const month = selectedDate.getMonth();
       const firstDay = new Date(year, month, 1); const startDay = (firstDay.getDay() + 6) % 7; 
       const daysInMonth = new Date(year, month+1, 0).getDate();
-      pageContainer.innerHTML += `<h2>${firstDay.toLocaleDateString('tr-TR', {month:'long', year:'numeric'})}</h2>`;
+      
+      // Header
+      const headerTitle = document.createElement('h2');
+      headerTitle.textContent = firstDay.toLocaleDateString('tr-TR', {month:'long', year:'numeric'});
+      pageContainer.appendChild(headerTitle);
+
+      // Grid
       const grid = document.createElement('div'); grid.className = 'calendar-grid';
       ['Pt','Sa','Ça','Pe','Cu','Ct','Pa'].forEach(d => grid.innerHTML += `<div style="text-align:center; font-size:12px; color:var(--muted);">${d}</div>`);
       for(let i=0; i<startDay; i++) grid.innerHTML += `<div></div>`;
+      
       for(let d=1; d<=daysInMonth; d++){
         const current = new Date(year, month, d); const k = dayKey(current);
         const dayItems = db.days[k] || [];
@@ -256,17 +261,27 @@
         if(dayItems.some(x => x.type === 'termin' && !x.done)) dotsHtml += `<span class="dot" style="background:var(--frame-termin)"></span>`;
         if(dayItems.some(x => x.type === 'hedef' && !x.done)) dotsHtml += `<span class="dot" style="background:var(--frame-hedef)"></span>`;
         const isToday = k === dayKey(new Date());
-        const cell = document.createElement('div'); cell.className = `cal-cell ${isToday ? 'today' : ''}`;
+        
+        const cell = document.createElement('div'); 
+        cell.className = `cal-cell ${isToday ? 'today' : ''}`;
         cell.innerHTML = `<div>${d}</div><div class="dots">${dotsHtml}</div>`;
         cell.onclick = () => { selectedDate = current; router('daily'); };
         grid.appendChild(cell);
       }
       pageContainer.appendChild(grid);
+      
+      // Bottom Notes
+      const bottomSection = document.createElement('div');
       const selKey = dayKey(selectedDate);
       const selItems = (db.days[selKey] || []).filter(x => ['termin','hedef'].includes(x.type));
-      pageContainer.innerHTML += `<div style="margin-top:20px; color:var(--muted);">${selectedDate.toLocaleDateString('tr-TR')} - Önemli Notlar</div>`;
-      if(selItems.length===0) pageContainer.innerHTML += `<div style="font-size:12px; margin-top:5px; color:#555">Kayıt yok.</div>`;
-      else selItems.forEach(item => pageContainer.appendChild(createTaskCard(item, 'day', selKey)));
+      
+      bottomSection.innerHTML = `<div style="margin-top:20px; color:var(--muted);">${selectedDate.toLocaleDateString('tr-TR')} - Önemli Notlar</div>`;
+      if(selItems.length===0) {
+        bottomSection.innerHTML += `<div style="font-size:12px; margin-top:5px; color:#555">Kayıt yok.</div>`;
+      } else {
+        selItems.forEach(item => bottomSection.appendChild(createTaskCard(item, 'day', selKey)));
+      }
+      pageContainer.appendChild(bottomSection);
     }
 
     function renderInbox(){
@@ -294,7 +309,9 @@
       const adder = document.createElement('div'); adder.style.marginBottom='15px';
       adder.innerHTML = `<div style="display:flex; gap:10px;"><input type="text" id="newTagName" placeholder="Yeni tag ismi" style="flex:1; padding:8px; background:#000; border:1px solid #333; color:#fff; border-radius:8px;"><input type="color" id="newTagColor" value="#7dd3fc" style="width:40px; height:40px; border:none; background:none;"><button class="btn" onclick="addTag()">Ekle</button></div>`;
       pageContainer.appendChild(adder);
-      const listContainer = document.createElement('div'); listContainer.id='tagListContainer'; pageContainer.appendChild(listContainer);
+      
+      const listContainer = document.createElement('div'); listContainer.id='tagListContainer'; 
+      pageContainer.appendChild(listContainer);
 
       if(db.tags && db.tags.length > 0){
         db.tags.forEach((t, index) => {
@@ -317,7 +334,13 @@
           listContainer.appendChild(row);
         });
       } else { listContainer.innerHTML = `<div style="color:#555; font-size:13px;">Hiç tag yok.</div>`; }
-      pageContainer.innerHTML += `<button class="btn" style="width:100%; margin-top:30px; border-color:#fb7185; color:#fb7185;" onclick="logoutApp()">Çıkış Yap</button>`;
+      
+      const exitBtn = document.createElement('button');
+      exitBtn.className = "btn";
+      exitBtn.style.cssText = "width:100%; margin-top:30px; border-color:#fb7185; color:#fb7185;";
+      exitBtn.textContent = "Çıkış Yap";
+      exitBtn.onclick = logoutApp;
+      pageContainer.appendChild(exitBtn);
     }
 
     function addTag(){ const name = document.getElementById('newTagName').value.trim(); const color = document.getElementById('newTagColor').value; if(name){ db.tags.push({name, color}); saveDB(); } }
@@ -332,7 +355,6 @@
       const el = document.createElement('div'); el.className = `task-card ${item.type||'gorev'} ${item.done ? 'done' : ''}`;
       const tagObj = db.tags.find(t=>t.name===item.tag); const tagColor = tagObj ? tagObj.color : '#666';
       
-      // ONCLICK EVENTİ EKLENDİ: openEditTask
       el.innerHTML = `
         <div class="check-circle ${item.done ? 'checked' : ''}">✓</div>
         <div class="task-content" onclick="openEditTask('${item.id}', '${source}', '${sourceKey}')">
@@ -357,14 +379,13 @@
     const fabBtn = document.getElementById('fabBtn'); const modalOverlay = document.getElementById('modalOverlay'); const modalClose = document.getElementById('modalClose'); const modalSave = document.getElementById('modalSave');
     fabBtn.onclick = () => openModal(); modalClose.onclick = () => modalOverlay.style.display='none';
     
-    // --- MODAL YÖNETİMİ (YENİ EKLEME VE DÜZENLEME) ---
     function fillTagSelect() {
       const tagSelect = document.getElementById('mTag'); tagSelect.innerHTML = `<option value="">Etiket Yok</option>`;
       (db.tags||[]).forEach(t => tagSelect.innerHTML += `<option value="${t.name}" style="color:${t.color}">${t.name}</option>`);
     }
 
     function openModal(){
-      editState = null; // Yeni ekleme modu
+      editState = null;
       document.getElementById('modalTitle').textContent = "Yeni Ekle";
       currentModalDest = currentPage === 'inbox' ? 'inbox' : 'day';
       document.getElementById('mText').value = ''; document.getElementById('mTime').value = '';
@@ -373,27 +394,18 @@
     }
 
     function openEditTask(id, source, key) {
-      // 1. Öğeyi bul
       let item = null;
-      if (source === 'inbox') {
-        item = db.inbox.find(x => x.id === id);
-      } else {
-        item = db.days[key].find(x => x.id === id);
-      }
+      if (source === 'inbox') item = db.inbox.find(x => x.id === id);
+      else item = db.days[key].find(x => x.id === id);
       if (!item) return;
 
-      // 2. Modu ayarla
       editState = { id, source, key };
       document.getElementById('modalTitle').textContent = "Düzenle";
-      
-      // 3. Verileri doldur
       fillTagSelect();
       document.getElementById('mText').value = item.text;
       document.getElementById('mTime').value = item.time || '';
       document.getElementById('mType').value = item.type || 'gorev';
       document.getElementById('mTag').value = item.tag || '';
-
-      // 4. Modalı aç
       modalOverlay.style.display = 'flex';
     }
 
@@ -404,19 +416,14 @@
       const tag = document.getElementById('mTag').value;
 
       if (editState) {
-        // --- GÜNCELLEME ---
         let list = (editState.source === 'inbox') ? db.inbox : db.days[editState.key];
         let item = list.find(x => x.id === editState.id);
-        if (item) {
-          item.text = text; item.time = time; item.type = type; item.tag = tag;
-        }
+        if (item) { item.text = text; item.time = time; item.type = type; item.tag = tag; }
       } else {
-        // --- YENİ EKLEME ---
         const newItem = { id: Date.now().toString(), text, time, type, tag, done: false };
         if(currentModalDest === 'inbox'){ db.inbox = db.inbox || []; db.inbox.push(newItem); } 
         else { const k = dayKey(selectedDate); db.days[k] = db.days[k] || []; db.days[k].push(newItem); }
       }
-
       saveDB(); modalOverlay.style.display = 'none';
     };
 
