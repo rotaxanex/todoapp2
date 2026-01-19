@@ -57,6 +57,9 @@
     .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 15px; }
     .cal-cell { aspect-ratio: 1; background: var(--card); border-radius: 8px; border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; }
     .cal-cell.today { border-color: var(--accent); color: var(--accent); font-weight: bold; }
+    /* Seçili Gün Stili */
+    .cal-cell.active-day { background: var(--text); color: var(--bg); border-color: var(--text); font-weight: bold; }
+    
     .dots { display: flex; gap: 2px; margin-top: 2px; }
     .dot { width: 4px; height: 4px; border-radius: 50%; }
 
@@ -180,7 +183,7 @@
         .on('postgres_changes', { event: '*', schema: 'public', table: 'user_data' }, payload => {
           if(payload.new && payload.new.id === currentUser.id){
             db = payload.new.content;
-            renderCurrentPage();
+            renderCurrentPage(); // Sayfa yenilenir, takvim açıksa takvim güncellenir
           }
         })
         .subscribe();
@@ -260,22 +263,38 @@
         let dotsHtml = '';
         if(dayItems.some(x => x.type === 'termin' && !x.done)) dotsHtml += `<span class="dot" style="background:var(--frame-termin)"></span>`;
         if(dayItems.some(x => x.type === 'hedef' && !x.done)) dotsHtml += `<span class="dot" style="background:var(--frame-hedef)"></span>`;
-        const isToday = k === dayKey(new Date());
         
+        const isToday = k === dayKey(new Date());
+        // SEÇİLİ GÜN KONTROLÜ
+        const isSelected = k === dayKey(selectedDate);
+
         const cell = document.createElement('div'); 
-        cell.className = `cal-cell ${isToday ? 'today' : ''}`;
+        // Seçiliyse 'active-day' class'ı ver
+        cell.className = `cal-cell ${isToday ? 'today' : ''} ${isSelected ? 'active-day' : ''}`;
         cell.innerHTML = `<div>${d}</div><div class="dots">${dotsHtml}</div>`;
-        cell.onclick = () => { selectedDate = current; router('daily'); };
+        
+        // TIKLANINCA: Sadece seçili tarihi güncelle ve takvimi yenile (Sayfa değiştirme)
+        cell.onclick = () => { 
+            selectedDate = current; 
+            renderCalendar(); // Takvimi yeniden çiz
+        };
+        
         grid.appendChild(cell);
       }
       pageContainer.appendChild(grid);
       
-      // Bottom Notes
+      // Bottom Notes (Takvimin Altı)
       const bottomSection = document.createElement('div');
       const selKey = dayKey(selectedDate);
-      const selItems = (db.days[selKey] || []).filter(x => ['termin','hedef'].includes(x.type));
+      const items = db.days[selKey] || [];
       
-      bottomSection.innerHTML = `<div style="margin-top:20px; color:var(--muted);">${selectedDate.toLocaleDateString('tr-TR')} - Önemli Notlar</div>`;
+      // SADECE ÖNEMLİ OLANLAR MI, HEPSİ Mİ? (İsteğe göre ayarlanabilir)
+      // Şimdilik senin isteğin üzerine "Önemli Notlar" başlığı altında termin ve hedefleri gösteriyorum.
+      // Hepsini görmek istersen filter kısmını silmen yeterli.
+      const selItems = items.filter(x => ['termin','hedef'].includes(x.type));
+      
+      bottomSection.innerHTML = `<div style="margin-top:20px; border-top:1px solid var(--line); padding-top:10px; color:var(--muted);">${selectedDate.toLocaleDateString('tr-TR')} - Önemli Notlar</div>`;
+      
       if(selItems.length===0) {
         bottomSection.innerHTML += `<div style="font-size:12px; margin-top:5px; color:#555">Kayıt yok.</div>`;
       } else {
