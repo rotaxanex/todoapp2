@@ -16,6 +16,10 @@
     :root{
       --bg:#0f0f10; --card:#17171a; --muted:#a3a3a3; --text:#f5f5f5; --line:#2a2a2f; --accent:#7dd3fc;
       --nav-height: 60px;
+      /* TÜR RENKLERİ */
+      --frame-termin:#fb7185; 
+      --frame-hedef:#60a5fa; 
+      --frame-gorev:#34d399;
     }
     *{ box-sizing:border-box; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
     html, body{ height:100%; margin:0; background:var(--bg); color:var(--text); overflow:hidden; }
@@ -50,7 +54,6 @@
       margin-bottom: 20px; cursor: pointer; display: inline-block;
     }
 
-    /* KART STİLİ GÜNCELLENDİ: Border rengi JS'den gelecek */
     .task-card { 
       background: var(--card); 
       border-radius: 12px; 
@@ -60,7 +63,8 @@
       align-items: flex-start; 
       gap: 12px; 
       border: 1px solid var(--line); 
-      /* Sol border artık JS ile verilecek */
+      border-left-width: 4px;
+      transition: all 0.2s ease;
     }
     .task-card.done { opacity: 0.5; }
     
@@ -324,13 +328,11 @@
         
         let dotsHtml = '';
         if(dayItems.length > 0) {
-            // Renkli noktalar yerine sadece 2 tane genel nokta
-            // Veya etiket rengine göre nokta (daha gelişmiş olur ama karmaşıklaşabilir)
-            // Şimdilik önemli tipler için nokta koyalım:
+            // Termin veya Hedef varsa o rengi bas
             if(dayItems.some(x => x.type === 'termin' && !x.done)) dotsHtml += `<span class="dot" style="background:var(--frame-termin)"></span>`;
             if(dayItems.some(x => x.type === 'hedef' && !x.done)) dotsHtml += `<span class="dot" style="background:var(--frame-hedef)"></span>`;
-            // Normal görevler için gri nokta
-            if(dayItems.some(x => x.type === 'gorev' && !x.done)) dotsHtml += `<span class="dot" style="background:var(--muted)"></span>`;
+            // Sadece normal görev varsa gri
+            if(!dotsHtml && dayItems.some(x => !x.done)) dotsHtml += `<span class="dot" style="background:var(--muted)"></span>`;
         }
         
         const isCurrentToday = currentK === dayKey(new Date());
@@ -346,7 +348,7 @@
       
       const bottomSection = document.createElement('div');
       const selKey = dayKey(selectedDate);
-      const selItems = (db.days[selKey] || []); // Tüm notları göster (önemli filtreyi kaldırdım, daha mantıklı)
+      const selItems = (db.days[selKey] || []);
       
       bottomSection.innerHTML = `<div style="margin-top:20px; border-top:1px solid var(--line); padding-top:10px; color:var(--muted);">${selectedDate.toLocaleDateString('tr-TR')} - Görevler</div>`;
       if(selItems.length===0) {
@@ -424,14 +426,23 @@
       const el = document.createElement('div');
       el.className = `task-card ${item.done ? 'done' : ''}`;
       
-      const tagObj = db.tags.find(t=>t.name===item.tag);
-      const tagColor = tagObj ? tagObj.color : 'var(--line)';
+      // 1. TÜR RENGİ (Çerçeve)
+      // Varsayılan (Gorev)
+      let typeColor = 'var(--frame-gorev)';
+      if(item.type === 'termin') typeColor = 'var(--frame-termin)';
+      else if(item.type === 'hedef') typeColor = 'var(--frame-hedef)';
 
-      // RENKLİ KART AYARI
-      el.style.borderLeft = `4px solid ${tagColor}`;
-      // Arka plana çok hafif renk ver (şeffaf)
-      // Hex koduna 20 (yaklaşık %12 opacity) ekleyerek şeffaflık veriyoruz
-      el.style.background = `linear-gradient(90deg, ${tagColor}15 0%, var(--card) 100%)`;
+      // 2. TAG RENGİ (Arka Plan - Hafif)
+      let tagColor = '#333'; // Varsayılan koyu
+      if(item.tag) {
+         const t = db.tags.find(x => x.name === item.tag);
+         if(t) tagColor = t.color;
+      }
+      
+      // UYGULAMA
+      el.style.borderLeft = `4px solid ${typeColor}`;
+      // Gradient ile tag rengini çok hafif (%15 opaklık) basıyoruz
+      el.style.background = `linear-gradient(90deg, ${tagColor}25 0%, var(--card) 100%)`;
 
       el.innerHTML = `
         <div class="check-circle ${item.done ? 'checked' : ''}">✓</div>
