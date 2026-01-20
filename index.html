@@ -7,8 +7,8 @@
   <title>Minimal To-Do App</title>
   
   <link rel="manifest" href="manifest.json" />
-  <link rel="icon" type="image/png" href="icon-512.png" />
-  <link rel="apple-touch-icon" href="icon-512.png" />
+  <link rel="icon" type="image/png" href="Icon-512.png" />
+  <link rel="apple-touch-icon" href="Icon-512.png" />
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -71,6 +71,17 @@
     .check-circle { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--muted); flex-shrink: 0; display: grid; place-items: center; cursor: pointer; margin-top: 2px; }
     .check-circle.checked { background: var(--accent); border-color: var(--accent); color: #000; font-weight: bold; font-size: 14px; }
     .task-content { flex:1; cursor: pointer; }
+    
+    /* GÖREV NOTU STİLİ */
+    .task-note {
+      font-size: 12px; 
+      color: var(--muted); 
+      margin-top: 6px; 
+      white-space: pre-wrap; /* Satır başlarını korur */
+      line-height: 1.4;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding-top: 4px;
+    }
 
     /* TAKVİM GRID */
     .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 15px; }
@@ -83,19 +94,7 @@
     /* HABITS */
     .habit-row { display: flex; align-items: center; justify-content: space-between; background: var(--card); padding: 14px; border-radius: 12px; margin-bottom: 8px; border: 1px solid var(--line); }
     .habit-left { display: flex; align-items: center; gap: 12px; flex:1; cursor:pointer; }
-    /* Kartın üzerindeki Streak Yazısı */
-    .streak-badge { 
-      font-size:12px; 
-      background:#2a2a2f; 
-      padding:4px 8px; 
-      border-radius:8px; 
-      color:#fbbf24; 
-      margin-left:auto; /* Sağa yasla */
-      display:flex; 
-      align-items:center; 
-      gap:4px; 
-      border: 1px solid #444;
-    }
+    .streak-badge { font-size:12px; background:#2a2a2f; padding:4px 8px; border-radius:8px; color:#fbbf24; margin-left:auto; display:flex; align-items:center; gap:4px; border: 1px solid #444;}
 
     /* TAGS */
     .tag-row { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--card); border-radius: 10px; margin-bottom: 8px; cursor: grab; }
@@ -105,7 +104,7 @@
 
     /* MODAL */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: none; align-items: flex-end; }
-    .modal-sheet { width: 100%; background: #1c1c1e; border-radius: 20px 20px 0 0; padding: 20px; animation: slideUp 0.3s ease; display:flex; flex-direction:column; max-height:85vh; }
+    .modal-sheet { width: 100%; background: #1c1c1e; border-radius: 20px 20px 0 0; padding: 20px; animation: slideUp 0.3s ease; display:flex; flex-direction:column; max-height:90vh; }
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .modal-input { width: 100%; padding: 12px; background: #000; border: 1px solid var(--line); color: #fff; border-radius: 10px; margin-bottom: 10px; }
     .modal-row { display: flex; gap: 10px; margin-bottom: 10px; }
@@ -114,10 +113,7 @@
     /* HABIT DETAIL MODAL STYLES */
     .habit-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
     .habit-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top:15px; }
-    .habit-cal-cell { 
-        aspect-ratio:1; background:#000; border-radius:6px; border:1px solid #333;
-        display:flex; align-items:center; justify-content:center; font-size:12px; color:#555; 
-    }
+    .habit-cal-cell { aspect-ratio:1; background:#000; border-radius:6px; border:1px solid #333; display:flex; align-items:center; justify-content:center; font-size:12px; color:#555; }
     .habit-cal-cell.done { background:var(--accent); color:#000; font-weight:bold; border-color:var(--accent); }
 
     #dialogOverlay { display:none; }
@@ -184,7 +180,10 @@
           <option value="hedef">Hedef</option>
         </select>
       </div>
-      <select id="mTag" class="modal-select" style="width:100%; margin-bottom:15px;"></select>
+      <select id="mTag" class="modal-select" style="width:100%; margin-bottom:10px;"></select>
+      
+      <textarea id="mNote" class="modal-input" placeholder="Notlar, alt görevler..." rows="3" style="resize:none; margin-bottom:15px; font-family:inherit;"></textarea>
+
       <div style="display:flex; gap:10px;">
         <button id="modalClose" class="btn" style="flex:1;">İptal</button>
         <button id="modalSave" class="btn btn-primary" style="flex:1;">Kaydet</button>
@@ -209,7 +208,6 @@
       </div>
 
       <div id="habitDetailStats" style="text-align:center; margin-bottom:15px; font-weight:bold; color:var(--accent);"></div>
-      
       <div id="habitCalendar" class="habit-cal-grid"></div>
     </div>
   </div>
@@ -232,9 +230,9 @@
     let touchStartX = 0;
     let touchEndX = 0;
 
-    // HABIT DETAY İÇİN
+    // HABIT DETAY
     let selectedHabitId = null;
-    let selectedHabitMonth = new Date(); // Alışkanlık takviminde gezilen ay
+    let selectedHabitMonth = new Date();
 
     const appWrap = document.getElementById('appWrap');
     const authOverlay = document.getElementById('authOverlay');
@@ -299,7 +297,6 @@
       const map = {'daily':0, 'calendar':1, 'inbox':2, 'habits':3, 'settings':4};
       document.querySelectorAll('.nav-item')[map[page]].classList.add('active');
       
-      // FAB GÖRÜNÜM AYARI
       const showFab = ['daily', 'calendar', 'inbox'].includes(page);
       document.getElementById('fabBtn').style.display = showFab ? 'grid' : 'none';
       
@@ -481,12 +478,11 @@
       return streak;
     }
 
-    // --- ALIŞKANLIK DETAY & TAKVİM ---
     function openHabitDetail(id){
       const h = db.habits.find(x => x.id === id);
       if(!h) return;
       selectedHabitId = id;
-      selectedHabitMonth = new Date(); // Bugünü baz alarak aç
+      selectedHabitMonth = new Date();
       renderHabitDetailModal();
       document.getElementById('habitModal').style.display = 'flex';
     }
@@ -509,7 +505,6 @@
       const calGrid = document.getElementById('habitCalendar');
       calGrid.innerHTML = '';
       
-      // GÜNLER BAŞLIĞI
       ['Pt','Sa','Ça','Pe','Cu','Ct','Pa'].forEach(d => calGrid.innerHTML += `<div style="text-align:center; font-size:10px; color:var(--muted);">${d}</div>`);
 
       const year = selectedHabitMonth.getFullYear();
@@ -518,10 +513,8 @@
       const startDay = (firstDay.getDay() + 6) % 7; 
       const daysInMonth = new Date(year, month+1, 0).getDate();
 
-      // Boşluklar
       for(let i=0; i<startDay; i++) calGrid.innerHTML += `<div></div>`;
 
-      // Günler
       for(let d=1; d<=daysInMonth; d++){
         const current = new Date(year, month, d);
         const k = dayKey(current);
@@ -602,6 +595,7 @@
             ${item.time ? `<span style="font-size:11px; color:var(--muted);">⏰ ${item.time}</span>` : ''}
             ${item.tag ? `<span style="font-size:10px; color:${tagColor}; border:1px solid ${tagColor}; padding:1px 4px; border-radius:4px;">${item.tag}</span>` : ''}
           </div>
+          ${item.note ? `<div class="task-note">${item.note}</div>` : ''}
         </div>
         <button style="background:none; border:none; color:#555; font-size:16px;" onclick="deleteTask('${item.id}', '${source}', '${sourceKey}')">✕</button>
       `;
@@ -627,7 +621,9 @@
       editState = null;
       document.getElementById('modalTitle').textContent = "Yeni Ekle";
       currentModalDest = currentPage === 'inbox' ? 'inbox' : 'day';
-      document.getElementById('mText').value = ''; document.getElementById('mTime').value = '';
+      document.getElementById('mText').value = ''; 
+      document.getElementById('mTime').value = '';
+      document.getElementById('mNote').value = ''; // Not alanını temizle
       fillTagSelect();
       modalOverlay.style.display = 'flex'; document.getElementById('mText').focus();
     }
@@ -645,6 +641,7 @@
       document.getElementById('mTime').value = item.time || '';
       document.getElementById('mType').value = item.type || 'gorev';
       document.getElementById('mTag').value = item.tag || '';
+      document.getElementById('mNote').value = item.note || ''; // Notu getir
       modalOverlay.style.display = 'flex';
     }
 
@@ -653,13 +650,16 @@
       const time = document.getElementById('mTime').value;
       const type = document.getElementById('mType').value;
       const tag = document.getElementById('mTag').value;
+      const note = document.getElementById('mNote').value;
 
       if (editState) {
         let list = (editState.source === 'inbox') ? db.inbox : db.days[editState.key];
         let item = list.find(x => x.id === editState.id);
-        if (item) { item.text = text; item.time = time; item.type = type; item.tag = tag; }
+        if (item) { 
+          item.text = text; item.time = time; item.type = type; item.tag = tag; item.note = note;
+        }
       } else {
-        const newItem = { id: Date.now().toString(), text, time, type, tag, done: false };
+        const newItem = { id: Date.now().toString(), text, time, type, tag, note, done: false };
         if(currentModalDest === 'inbox'){ db.inbox = db.inbox || []; db.inbox.push(newItem); } 
         else { const k = dayKey(selectedDate); db.days[k] = db.days[k] || []; db.days[k].push(newItem); }
       }
