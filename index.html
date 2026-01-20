@@ -77,7 +77,7 @@
       font-size: 12px; 
       color: var(--muted); 
       margin-top: 6px; 
-      white-space: pre-wrap; /* Satır başlarını korur */
+      white-space: pre-wrap; 
       line-height: 1.4;
       border-top: 1px solid rgba(255,255,255,0.05);
       padding-top: 4px;
@@ -621,9 +621,15 @@
       editState = null;
       document.getElementById('modalTitle').textContent = "Yeni Ekle";
       currentModalDest = currentPage === 'inbox' ? 'inbox' : 'day';
+      
       document.getElementById('mText').value = ''; 
       document.getElementById('mTime').value = '';
-      document.getElementById('mNote').value = ''; // Not alanını temizle
+      document.getElementById('mNote').value = ''; 
+
+      // TAKVİMDEYSE 'TERMIN', DEĞİLSE 'GOREV'
+      const defaultType = (currentPage === 'calendar') ? 'termin' : 'gorev';
+      document.getElementById('mType').value = defaultType;
+
       fillTagSelect();
       modalOverlay.style.display = 'flex'; document.getElementById('mText').focus();
     }
@@ -641,7 +647,7 @@
       document.getElementById('mTime').value = item.time || '';
       document.getElementById('mType').value = item.type || 'gorev';
       document.getElementById('mTag').value = item.tag || '';
-      document.getElementById('mNote').value = item.note || ''; // Notu getir
+      document.getElementById('mNote').value = item.note || ''; 
       modalOverlay.style.display = 'flex';
     }
 
