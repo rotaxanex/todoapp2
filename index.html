@@ -72,7 +72,6 @@
     .check-circle.checked { background: var(--accent); border-color: var(--accent); color: #000; font-weight: bold; font-size: 14px; }
     .task-content { flex:1; cursor: pointer; }
     
-    /* GÖREV NOTU STİLİ */
     .task-note {
       font-size: 12px; 
       color: var(--muted); 
@@ -83,7 +82,6 @@
       padding-top: 4px;
     }
 
-    /* TAKVİM GRID */
     .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 15px; }
     .cal-cell { aspect-ratio: 1; background: var(--card); border-radius: 8px; border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; }
     .cal-cell.today { border-color: var(--accent); color: var(--accent); font-weight: bold; }
@@ -91,18 +89,15 @@
     .dots { display: flex; gap: 2px; margin-top: 2px; }
     .dot { width: 4px; height: 4px; border-radius: 50%; }
 
-    /* HABITS */
     .habit-row { display: flex; align-items: center; justify-content: space-between; background: var(--card); padding: 14px; border-radius: 12px; margin-bottom: 8px; border: 1px solid var(--line); }
     .habit-left { display: flex; align-items: center; gap: 12px; flex:1; cursor:pointer; }
     .streak-badge { font-size:12px; background:#2a2a2f; padding:4px 8px; border-radius:8px; color:#fbbf24; margin-left:auto; display:flex; align-items:center; gap:4px; border: 1px solid #444;}
 
-    /* TAGS */
     .tag-row { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--card); border-radius: 10px; margin-bottom: 8px; cursor: grab; }
     .tag-row.dragging { opacity: 0.5; border: 1px dashed #777; }
     .tag-row.drag-over { border: 2px dashed var(--accent); }
     .color-dot { width: 16px; height: 16px; border-radius: 50%; }
 
-    /* MODAL */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: none; align-items: flex-end; }
     .modal-sheet { width: 100%; background: #1c1c1e; border-radius: 20px 20px 0 0; padding: 20px; animation: slideUp 0.3s ease; display:flex; flex-direction:column; max-height:90vh; }
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -110,7 +105,6 @@
     .modal-row { display: flex; gap: 10px; margin-bottom: 10px; }
     .modal-select { flex: 1; padding: 10px; background: #000; border: 1px solid var(--line); color: #fff; border-radius: 8px; }
 
-    /* HABIT DETAIL MODAL STYLES */
     .habit-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
     .habit-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top:15px; }
     .habit-cal-cell { aspect-ratio:1; background:#000; border-radius:6px; border:1px solid #333; display:flex; align-items:center; justify-content:center; font-size:12px; color:#555; }
@@ -225,14 +219,8 @@
     let currentModalDest = 'day';
     let dragSrcEl = null;
     let editState = null;
-    
-    // SWIPE
-    let touchStartX = 0;
-    let touchEndX = 0;
-
-    // HABIT DETAY
-    let selectedHabitId = null;
-    let selectedHabitMonth = new Date();
+    let touchStartX = 0; let touchEndX = 0;
+    let selectedHabitId = null; let selectedHabitMonth = new Date();
 
     const appWrap = document.getElementById('appWrap');
     const authOverlay = document.getElementById('authOverlay');
@@ -317,8 +305,6 @@
       return `${y}-${m}-${day}`;
     }
 
-    // --- RENDER SAYFALARI ---
-
     function renderDaily(){
       const k = dayKey(selectedDate);
       const isToday = dayKey(new Date()) === k; 
@@ -401,9 +387,11 @@
       
       const bottomSection = document.createElement('div');
       const selKey = dayKey(selectedDate);
-      const selItems = (db.days[selKey] || []);
       
-      bottomSection.innerHTML = `<div style="margin-top:20px; border-top:1px solid var(--line); padding-top:10px; color:var(--muted);">${selectedDate.toLocaleDateString('tr-TR')} - Görevler</div>`;
+      // SADECE TERMİN VE HEDEFLER GÖSTERİLİYOR
+      const selItems = (db.days[selKey] || []).filter(x => ['termin','hedef'].includes(x.type));
+      
+      bottomSection.innerHTML = `<div style="margin-top:20px; border-top:1px solid var(--line); padding-top:10px; color:var(--muted);">${selectedDate.toLocaleDateString('tr-TR')} - Önemli Notlar</div>`;
       if(selItems.length===0) {
         bottomSection.innerHTML += `<div style="font-size:12px; margin-top:5px; color:#555">Kayıt yok.</div>`;
       } else {
@@ -419,7 +407,6 @@
       items.forEach(item => pageContainer.appendChild(createTaskCard(item, 'inbox', null)));
     }
 
-    // --- HABITS ---
     function renderHabits(){
       const header = document.createElement('div');
       header.style.display='flex'; header.style.justifyContent='space-between'; header.style.alignItems='center';
