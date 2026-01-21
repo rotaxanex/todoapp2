@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <meta name="theme-color" content="#111111" />
-  <title>Minimal To-Do Mobile (Final Sync)</title>
+  <title>Minimal To-Do Mobile (Final UI)</title>
   
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/png" href="icon-512.png" />
@@ -58,7 +58,7 @@
       background: var(--card); 
       border-radius: 12px; 
       padding: 12px; 
-      margin-bottom: 10px; 
+      margin-bottom: 8px; /* Kart aralığı biraz küçüldü */
       display: flex; 
       align-items: flex-start; 
       gap: 12px; 
@@ -73,16 +73,10 @@
     
     .task-content { flex:1; cursor: pointer; min-width: 0; }
     
+    /* Not stili artık kart içinde kullanılmıyor ama modal için kalsın */
     .task-note {
-      font-size: 13px; 
-      color: #ccc; 
-      margin-top: 6px; 
-      white-space: pre-wrap; 
-      line-height: 1.5;
-      border-top: 1px solid rgba(255,255,255,0.1);
-      padding-top: 6px;
-      word-break: break-word;
-      display: block;
+      font-size: 13px; color: #ccc; margin-top: 6px; white-space: pre-wrap; 
+      line-height: 1.5; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 6px;
     }
 
     .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 15px; }
@@ -96,8 +90,10 @@
     .habit-left { display: flex; align-items: center; gap: 12px; flex:1; cursor:pointer; }
     .streak-badge { font-size:12px; background:#2a2a2f; padding:4px 8px; border-radius:8px; color:#fbbf24; margin-left:auto; display:flex; align-items:center; gap:4px; border: 1px solid #444;}
 
-    .tag-row { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--card); border-radius: 10px; margin-bottom: 8px; }
-    .tag-ctrl-btn { background: #000; color: #fff; border: 1px solid #333; width: 30px; height: 30px; border-radius: 6px; display: grid; place-items: center; cursor: pointer; font-size: 12px; }
+    /* YENİ TAG STİLİ */
+    .tag-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--card); border-radius: 10px; margin-bottom: 6px; font-size: 13px; }
+    .tag-ctrl-btn { background: #000; color: #fff; border: 1px solid #333; width: 24px; height: 24px; border-radius: 6px; display: grid; place-items: center; cursor: pointer; font-size: 10px; }
+    .color-dot { width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--line); flex-shrink: 0; }
 
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: none; align-items: flex-end; }
     .modal-sheet { width: 100%; background: #1c1c1e; border-radius: 20px 20px 0 0; padding: 20px; animation: slideUp 0.3s ease; display:flex; flex-direction:column; max-height:90vh; }
@@ -213,7 +209,6 @@
     let _supabase = null;
     if(SUPABASE_URL && SUPABASE_KEY) _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // PC UYUMLULUĞU: habitHistory eklendi
     let db = { days:{}, inbox:[], tags:[], habits:[], habitHistory:{} };
     let currentUser = null;
     let currentPage = 'daily';
@@ -241,12 +236,10 @@
       await loadRemoteDB();
       if(!db.tags || db.tags.length===0) db.tags = [{name:'genel', color:'#7dd3fc'}];
 
-      // REALTIME LISTENER: PC'de yapılan değişiklikler telefona anlık gelsin
       _supabase.channel('public:user_data')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'user_data' }, payload => {
           if(payload.new && payload.new.id === currentUser.id){
             db = payload.new.content;
-            // PC uyumluluğu için habitHistory kontrolü
             if(!db.habitHistory) db.habitHistory = {};
             renderCurrentPage();
           }
@@ -263,7 +256,6 @@
       const { data } = await _supabase.from('user_data').select('content').eq('id', currentUser.id).single();
       if(data && data.content) { 
         db = data.content; 
-        // PC UYUMLULUĞU
         if(!db.habitHistory) db.habitHistory = {};
         localStorage.setItem('mini_todo_v1', JSON.stringify(db)); 
       }
@@ -319,12 +311,9 @@
       const typeWeight = { 'termin': 1, 'hedef': 2, 'gorev': 3 };
       
       return [...tasks].sort((a, b) => {
-        // 1. Tip
         const tA = typeWeight[a.type] || 3;
         const tB = typeWeight[b.type] || 3;
         if(tA !== tB) return tA - tB;
-
-        // 2. Saat
         const getMins = (timeStr) => {
             if(!timeStr) return 9999;
             const [h, m] = timeStr.split(':').map(Number);
@@ -333,13 +322,10 @@
         const timeA = getMins(a.time);
         const timeB = getMins(b.time);
         if(timeA !== timeB) return timeA - timeB;
-
-        // 3. Tag
         let tagIndexA = db.tags.findIndex(t => t.name === a.tag);
         let tagIndexB = db.tags.findIndex(t => t.name === b.tag);
         if(tagIndexA === -1) tagIndexA = 999;
         if(tagIndexB === -1) tagIndexB = 999;
-        
         return tagIndexA - tagIndexB;
       });
     }
@@ -454,12 +440,9 @@
       pageContainer.innerHTML += `<div style="color:var(--muted); margin-bottom:15px; font-size:12px;">Üzerine tıkla, geçmişi gör.</div>`;
 
       const todayK = dayKey(new Date());
-      
-      // PC UYUMLULUĞU: History kontrolü
       if(!db.habitHistory) db.habitHistory = {};
 
       (db.habits || []).forEach(h => {
-        // PC UYUMLULUĞU: db.habitHistory'den oku
         const history = db.habitHistory[h.id] || [];
         const isDoneToday = history.includes(todayK);
         const streak = calculateStreak(history);
@@ -482,22 +465,17 @@
       });
     }
 
-    // PC UYUMLULUĞU: habitHistory'e yaz
     function toggleHabit(id){
       const todayK = dayKey(new Date());
-      
       if(!db.habitHistory) db.habitHistory = {};
       if(!db.habitHistory[id]) db.habitHistory[id] = [];
       
       let history = db.habitHistory[id];
-      
       if(history.includes(todayK)) history = history.filter(d => d !== todayK);
       else history.push(todayK);
       
       db.habitHistory[id] = history;
-      
       saveDB();
-      // FIX: renderHabits yerine renderCurrentPage kullanarak klonlamayı önlüyoruz
       renderCurrentPage();
     }
 
@@ -534,8 +512,6 @@
     function renderHabitDetailModal(){
       const h = db.habits.find(x => x.id === selectedHabitId);
       if(!h) return;
-      
-      // PC UYUMLULUĞU: History'i external objeden al
       const history = (db.habitHistory && db.habitHistory[selectedHabitId]) ? db.habitHistory[selectedHabitId] : [];
 
       document.getElementById('habitDetailTitle').textContent = h.name;
@@ -546,9 +522,8 @@
 
       const calGrid = document.getElementById('habitCalendar');
       calGrid.innerHTML = '';
-      
       ['Pt','Sa','Ça','Pe','Cu','Ct','Pa'].forEach(d => calGrid.innerHTML += `<div style="text-align:center; font-size:10px; color:var(--muted);">${d}</div>`);
-
+      
       const year = selectedHabitMonth.getFullYear();
       const month = selectedHabitMonth.getMonth();
       const firstDay = new Date(year, month, 1);
@@ -560,9 +535,7 @@
       for(let d=1; d<=daysInMonth; d++){
         const current = new Date(year, month, d);
         const k = dayKey(current);
-        // PC UYUMLULUĞU
         const isDone = history.includes(k);
-        
         const cell = document.createElement('div');
         cell.className = `habit-cal-cell ${isDone ? 'done' : ''}`;
         cell.textContent = d;
@@ -640,11 +613,8 @@
     function deleteHabit(id){ 
         customConfirm("Sil", "Silinsin mi?", () => { 
             db.habits = db.habits.filter(h => h.id !== id); 
-            // PC UYUMLULUĞU: habitHistory temizliği
             if(db.habitHistory && db.habitHistory[id]) delete db.habitHistory[id];
-            
             saveDB(); 
-            // FIX: renderHabits yerine renderCurrentPage
             renderCurrentPage(); 
         }); 
     }
@@ -654,7 +624,6 @@
                 db.habits = db.habits || []; 
                 db.habits.push({ id: Date.now().toString(), name: val.trim() }); 
                 saveDB(); 
-                // FIX: renderHabits yerine renderCurrentPage
                 renderCurrentPage(); 
             } 
         }); 
@@ -678,16 +647,17 @@
       el.style.borderLeft = `4px solid ${typeColor}`;
       el.style.background = `linear-gradient(90deg, ${tagColor}25 0%, var(--card) 100%)`;
 
-      // PC UYUMLULUĞU: 'note' yerine 'notes' kullanılıyor
+      // NOT GİZLEME VE İKON EKLEME
       el.innerHTML = `
         <div class="check-circle ${item.done ? 'checked' : ''}">✓</div>
         <div class="task-content" onclick="openEditTask('${item.id}', '${source}', '${sourceKey}')">
-          <div style="font-size:14px; line-height:1.4;">${item.text}</div>
+          <div style="font-size:14px; line-height:1.4;">
+            ${item.text} ${item.notes ? ' <span style="font-size:10px; opacity:0.7">📝</span>' : ''}
+          </div>
           <div style="display:flex; gap:8px; margin-top:4px; align-items:center;">
             ${item.time ? `<span style="font-size:11px; color:var(--muted);">⏰ ${item.time}</span>` : ''}
             ${item.tag ? `<span style="font-size:10px; color:${tagColor}; border:1px solid ${tagColor}; padding:1px 4px; border-radius:4px;">${item.tag}</span>` : ''}
           </div>
-          ${item.notes ? `<div class="task-note">${item.notes}</div>` : ''}
         </div>
         <button style="background:none; border:none; color:#555; font-size:16px;" onclick="deleteTask('${item.id}', '${source}', '${sourceKey}')">✕</button>
       `;
@@ -757,8 +727,6 @@
       document.getElementById('mTime').value = item.time || '';
       document.getElementById('mType').value = item.type || 'gorev';
       document.getElementById('mTag').value = item.tag || '';
-      
-      // PC UYUMLULUĞU: 'notes' key'ini oku
       document.getElementById('mNote').value = item.notes || ''; 
       
       modalOverlay.style.display = 'flex';
@@ -777,12 +745,10 @@
             let item = list.find(x => x.id === editState.id);
             if (item) { 
               item.text = text; item.time = time; item.type = type; item.tag = tag; 
-              // PC UYUMLULUĞU: 'notes' key'ine kaydet
               item.notes = note; 
             }
         }
       } else {
-        // PC UYUMLULUĞU: 'notes' key'ini kullan
         const newItem = { id: Date.now().toString(), text, time, type, tag, notes: note, done: false };
         if(currentModalDest === 'inbox'){ db.inbox = db.inbox || []; db.inbox.push(newItem); } 
         else { const k = dayKey(selectedDate); db.days[k] = db.days[k] || []; db.days[k].push(newItem); }
