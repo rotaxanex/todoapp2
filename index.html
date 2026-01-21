@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <meta name="theme-color" content="#111111" />
-  <title>Minimal To-Do v2</title>
+  <title>Minimal To-Do v3</title>
   
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/png" href="icon-512.png" />
@@ -71,18 +71,17 @@
     .check-circle { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--muted); flex-shrink: 0; display: grid; place-items: center; cursor: pointer; margin-top: 2px; }
     .check-circle.checked { background: var(--accent); border-color: var(--accent); color: #000; font-weight: bold; font-size: 14px; }
     
-    /* GÜNCELLENEN KISIM: Flex min-width ve Note CSS */
-    .task-content { flex:1; cursor: pointer; min-width: 0; /* Flex item taşmasını önler */ }
+    .task-content { flex:1; cursor: pointer; min-width: 0; }
     
     .task-note {
-      font-size: 13px; /* Biraz büyütüldü */
-      color: #ccc; /* Kontrast artırıldı */
+      font-size: 13px; 
+      color: #ccc; 
       margin-top: 6px; 
       white-space: pre-wrap; 
       line-height: 1.5;
       border-top: 1px solid rgba(255,255,255,0.1);
       padding-top: 6px;
-      word-break: break-word; /* Uzun kelimelerin taşmasını önler */
+      word-break: break-word;
       display: block;
     }
 
@@ -97,10 +96,8 @@
     .habit-left { display: flex; align-items: center; gap: 12px; flex:1; cursor:pointer; }
     .streak-badge { font-size:12px; background:#2a2a2f; padding:4px 8px; border-radius:8px; color:#fbbf24; margin-left:auto; display:flex; align-items:center; gap:4px; border: 1px solid #444;}
 
-    .tag-row { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--card); border-radius: 10px; margin-bottom: 8px; cursor: grab; }
-    .tag-row.dragging { opacity: 0.5; border: 1px dashed #777; }
-    .tag-row.drag-over { border: 2px dashed var(--accent); }
-    .color-dot { width: 16px; height: 16px; border-radius: 50%; }
+    .tag-row { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--card); border-radius: 10px; margin-bottom: 8px; }
+    .tag-ctrl-btn { background: #000; color: #fff; border: 1px solid #333; width: 30px; height: 30px; border-radius: 6px; display: grid; place-items: center; cursor: pointer; font-size: 12px; }
 
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: none; align-items: flex-end; }
     .modal-sheet { width: 100%; background: #1c1c1e; border-radius: 20px 20px 0 0; padding: 20px; animation: slideUp 0.3s ease; display:flex; flex-direction:column; max-height:90vh; }
@@ -216,12 +213,11 @@
     let _supabase = null;
     if(SUPABASE_URL && SUPABASE_KEY) _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let db = { days:{}, inbox:[], tags:[], habits:[], habitState:{date:'', doneIds:[]} };
+    let db = { days:{}, inbox:[], tags:[], habits:[] };
     let currentUser = null;
     let currentPage = 'daily';
     let selectedDate = new Date();
     let currentModalDest = 'day';
-    let dragSrcEl = null;
     let editState = null;
     let touchStartX = 0; let touchEndX = 0;
     let selectedHabitId = null; let selectedHabitMonth = new Date();
@@ -247,6 +243,7 @@
       _supabase.channel('public:user_data')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'user_data' }, payload => {
           if(payload.new && payload.new.id === currentUser.id){
+            // Senkronizasyon anında DB referansını yenile
             db = payload.new.content;
             renderCurrentPage();
           }
@@ -269,7 +266,7 @@
       if(currentUser) {
         _supabase.from('user_data').upsert({ id: currentUser.id, content: db, updated_at: new Date() }).then();
       }
-      renderCurrentPage();
+      // renderCurrentPage(); // Render'ı her save'de çağırmıyoruz, sadece gerekli yerlerde.
     }
 
     function handleTouchStart(e) { touchStartX = e.changedTouches[0].screenX; }
@@ -309,23 +306,17 @@
       return `${y}-${m}-${day}`;
     }
 
-    // --- YENİ SIRALAMA FONKSİYONU ---
     function sortTasks(tasks) {
       if(!tasks) return [];
-      // 1. Tip Sıralaması (Termin > Hedef > Görev)
       const typeWeight = { 'termin': 1, 'hedef': 2, 'gorev': 3 };
       
-      return tasks.sort((a, b) => {
-        // A. Tamamlanma durumu (opsiyonel, isterseniz tamamlananları alta atar)
-        // if(a.done !== b.done) return a.done ? 1 : -1;
-
-        // B. TİP SIRALAMASI
+      return [...tasks].sort((a, b) => {
+        // 1. Tip
         const tA = typeWeight[a.type] || 3;
         const tB = typeWeight[b.type] || 3;
         if(tA !== tB) return tA - tB;
 
-        // C. SAAT SIRALAMASI
-        // Saat varsa dakika cinsinden değer, yoksa 9999 (en son)
+        // 2. Saat
         const getMins = (timeStr) => {
             if(!timeStr) return 9999;
             const [h, m] = timeStr.split(':').map(Number);
@@ -335,10 +326,9 @@
         const timeB = getMins(b.time);
         if(timeA !== timeB) return timeA - timeB;
 
-        // D. TAG SIRALAMASI (Ayarlardaki sıraya göre)
+        // 3. Tag
         let tagIndexA = db.tags.findIndex(t => t.name === a.tag);
         let tagIndexB = db.tags.findIndex(t => t.name === b.tag);
-        // Tag yoksa veya bulunamazsa en sona
         if(tagIndexA === -1) tagIndexA = 999;
         if(tagIndexB === -1) tagIndexB = 999;
         
@@ -349,7 +339,6 @@
     function renderDaily(){
       const k = dayKey(selectedDate);
       const isToday = dayKey(new Date()) === k; 
-      // Sırlama burada uygulanıyor
       const items = sortTasks(db.days[k] || []);
       
       const header = document.createElement('div');
@@ -430,7 +419,6 @@
       const bottomSection = document.createElement('div');
       const selKey = dayKey(selectedDate);
       
-      // Filtreleme ve SIRALAMA
       let selItems = (db.days[selKey] || []).filter(x => ['termin','hedef'].includes(x.type));
       selItems = sortTasks(selItems);
       
@@ -476,20 +464,28 @@
           </div>
           <button style="background:none; border:none; color:#555;" onclick="deleteHabit('${h.id}')">🗑</button>
         `;
+        // KRİTİK DÜZELTME: Doğrudan fonksiyon çağırmak yerine ID ile işlem yapıyoruz.
         const checkBtn = div.querySelector('.check-circle');
         checkBtn.onclick = (e) => { e.stopPropagation(); toggleHabit(h.id); };
         pageContainer.appendChild(div);
       });
     }
 
+    // GÜNCEL VERİYE ERİŞİM İÇİN ID İLE ÇAĞIRMA
     function toggleHabit(id){
       const todayK = dayKey(new Date());
-      const h = db.habits.find(x => x.id === id);
-      if(!h) return;
+      // db.habits'i taze referans üzerinden bul
+      const hIndex = db.habits.findIndex(x => x.id === id);
+      if(hIndex === -1) return;
+      
+      const h = db.habits[hIndex];
       if(!h.history) h.history = [];
+      
       if(h.history.includes(todayK)) h.history = h.history.filter(d => d !== todayK);
       else h.history.push(todayK);
+      
       saveDB();
+      renderHabits(); // UI'ı elle güncelle
     }
 
     function calculateStreak(historyArray){
@@ -509,6 +505,7 @@
     }
 
     function openHabitDetail(id){
+      // Taze veriyi bul
       const h = db.habits.find(x => x.id === id);
       if(!h) return;
       selectedHabitId = id;
@@ -558,9 +555,9 @@
     }
 
     function renderSettings(){
-      pageContainer.innerHTML = `<h2>Tag Ayarları</h2><div style="color:var(--muted); font-size:12px; margin-bottom:15px;">Sıralamayı değiştirmek için sürükleyip bırakın. Bu sıralama görevlerdeki önceliği de belirler.</div>`;
+      pageContainer.innerHTML = `<h2>Tag Ayarları</h2><div style="color:var(--muted); font-size:12px; margin-bottom:15px;">Okları kullanarak sıralamayı değiştirebilirsiniz.</div>`;
       
-      // YENİ TAG EKLEME KISMI - RENK GİRİŞİ DÜZENLENDİ
+      // TAG EKLEME
       const adder = document.createElement('div'); 
       adder.style.marginBottom='15px';
       adder.innerHTML = `
@@ -579,24 +576,22 @@
       pageContainer.appendChild(listContainer);
       if(db.tags && db.tags.length > 0){
         db.tags.forEach((t, index) => {
-          const row = document.createElement('div'); row.className = 'tag-row'; row.draggable = true; row.dataset.index = index;
-          row.innerHTML = `<div style="font-size:18px; color:#555; cursor:grab; margin-right:10px;">☰</div><div class="color-dot" style="background:${t.color}"></div><div style="flex:1">${t.name} <span style="font-size:10px; color:#555">(${t.color})</span></div><button style="background:none; border:none; color:#555;" onclick="removeTag('${t.name}')">🗑</button>`;
-          row.addEventListener('dragstart', function(e) { dragSrcEl = this; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/html', this.innerHTML); this.classList.add('dragging'); });
-          row.addEventListener('dragover', function(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; this.classList.add('drag-over'); return false; });
-          row.addEventListener('dragleave', function() { this.classList.remove('drag-over'); });
-          row.addEventListener('dragend', function() { this.classList.remove('dragging'); document.querySelectorAll('.tag-row').forEach(el => el.classList.remove('drag-over')); });
-          row.addEventListener('drop', function(e) { 
-            e.stopPropagation();
-            if (dragSrcEl !== this) {
-              const oldIndex = parseInt(dragSrcEl.dataset.index); const newIndex = parseInt(this.dataset.index);
-              const item = db.tags.splice(oldIndex, 1)[0]; db.tags.splice(newIndex, 0, item);
-              saveDB(); renderSettings();
-            }
-            return false;
-          });
+          const row = document.createElement('div'); 
+          row.className = 'tag-row'; 
+          // DRAG & DROP YERİNE OK BUTONLARI (MOBİL UYUMLU)
+          row.innerHTML = `
+            <div style="display:flex; flex-direction:column; gap:2px;">
+                <div class="tag-ctrl-btn" onclick="moveTag(${index}, -1)">▲</div>
+                <div class="tag-ctrl-btn" onclick="moveTag(${index}, 1)">▼</div>
+            </div>
+            <div class="color-dot" style="background:${t.color}"></div>
+            <div style="flex:1">${t.name} <span style="font-size:10px; color:#555">(${t.color})</span></div>
+            <button style="background:none; border:none; color:#555;" onclick="removeTag('${t.name}')">🗑</button>
+          `;
           listContainer.appendChild(row);
         });
       } else { listContainer.innerHTML = `<div style="color:#555; font-size:13px;">Hiç tag yok.</div>`; }
+      
       const exitBtn = document.createElement('button');
       exitBtn.className = "btn";
       exitBtn.style.cssText = "width:100%; margin-top:30px; border-color:#fb7185; color:#fb7185;";
@@ -605,18 +600,35 @@
       pageContainer.appendChild(exitBtn);
     }
 
+    // YENİ SIRALAMA FONKSİYONU
+    function moveTag(index, direction) {
+        if (direction === -1 && index > 0) {
+            // Yukarı
+            const temp = db.tags[index];
+            db.tags[index] = db.tags[index - 1];
+            db.tags[index - 1] = temp;
+        } else if (direction === 1 && index < db.tags.length - 1) {
+            // Aşağı
+            const temp = db.tags[index];
+            db.tags[index] = db.tags[index + 1];
+            db.tags[index + 1] = temp;
+        }
+        saveDB();
+        renderSettings();
+    }
+
     function addTag(){ 
         const name = document.getElementById('newTagName').value.trim(); 
         const color = document.getElementById('newTagText').value.trim() || document.getElementById('newTagColor').value; 
-        if(name){ db.tags.push({name, color}); saveDB(); } 
+        if(name){ db.tags.push({name, color}); saveDB(); renderSettings(); } 
     }
     
-    function removeTag(name){ customConfirm("Tag Sil", `"${name}" silinsin mi?`, () => { db.tags = db.tags.filter(t => t.name !== name); saveDB(); }); }
+    function removeTag(name){ customConfirm("Tag Sil", `"${name}" silinsin mi?`, () => { db.tags = db.tags.filter(t => t.name !== name); saveDB(); renderSettings(); }); }
     function logoutApp(){ customConfirm("Çıkış Yap", "Emin misin?", async () => { try{ await _supabase.auth.signOut(); }catch(e){} localStorage.clear(); window.location.reload(); }); }
     
-    function deleteHabit(id){ customConfirm("Sil", "Silinsin mi?", () => { db.habits = db.habits.filter(h => h.id !== id); saveDB(); }); }
-    function addNewHabit(){ customPrompt("Yeni Alışkanlık", "Örn: Kitap", (val) => { if(val && val.trim()) { db.habits = db.habits || []; db.habits.push({ id: Date.now().toString(), name: val.trim(), history:[] }); saveDB(); } }); }
-    function deleteTask(id, source, key){ customConfirm("Sil", "Silinsin mi?", () => { if(source==='inbox') db.inbox=db.inbox.filter(x=>x.id!==id); else { db.days[key]=db.days[key].filter(x=>x.id!==id); if(db.days[key].length===0) delete db.days[key]; } saveDB(); }); }
+    function deleteHabit(id){ customConfirm("Sil", "Silinsin mi?", () => { db.habits = db.habits.filter(h => h.id !== id); saveDB(); renderHabits(); }); }
+    function addNewHabit(){ customPrompt("Yeni Alışkanlık", "Örn: Kitap", (val) => { if(val && val.trim()) { db.habits = db.habits || []; db.habits.push({ id: Date.now().toString(), name: val.trim(), history:[] }); saveDB(); renderHabits(); } }); }
+    function deleteTask(id, source, key){ customConfirm("Sil", "Silinsin mi?", () => { if(source==='inbox') db.inbox=db.inbox.filter(x=>x.id!==id); else { db.days[key]=db.days[key].filter(x=>x.id!==id); if(db.days[key].length===0) delete db.days[key]; } saveDB(); renderCurrentPage(); }); }
 
     function createTaskCard(item, source, sourceKey){
       const el = document.createElement('div');
@@ -647,8 +659,28 @@
         </div>
         <button style="background:none; border:none; color:#555; font-size:16px;" onclick="deleteTask('${item.id}', '${source}', '${sourceKey}')">✕</button>
       `;
-      el.querySelector('.check-circle').onclick = (e) => { e.stopPropagation(); item.done = !item.done; saveDB(); };
+      // KRİTİK: Burada item.done = !item.done yapmak yerine, ID ile global DB'yi bulup değiştiriyoruz.
+      el.querySelector('.check-circle').onclick = (e) => { 
+          e.stopPropagation(); 
+          toggleTaskStatus(item.id, source, sourceKey);
+      };
       return el;
+    }
+
+    // YENİ GÜVENLİ STATUS DEĞİŞTİRİCİ
+    function toggleTaskStatus(id, source, key) {
+        let foundItem;
+        if (source === 'inbox') {
+            foundItem = db.inbox.find(x => x.id === id);
+        } else {
+            foundItem = (db.days[key] || []).find(x => x.id === id);
+        }
+        
+        if (foundItem) {
+            foundItem.done = !foundItem.done;
+            saveDB();
+            renderCurrentPage(); // Değişikliği anında yansıt
+        }
     }
 
     const dialogOverlay = document.getElementById('dialogOverlay'); const dialogTitle = document.getElementById('dialogTitle'); const dialogMsg = document.getElementById('dialogMsg'); const dialogInput = document.getElementById('dialogInput'); const dialogOk = document.getElementById('dialogOk'); const dialogCancel = document.getElementById('dialogCancel'); let onDialogOk = null;
@@ -674,7 +706,6 @@
       document.getElementById('mTime').value = '';
       document.getElementById('mNote').value = ''; 
 
-      // TAKVİMDEYSE 'TERMIN', DEĞİLSE 'GOREV'
       const defaultType = (currentPage === 'calendar') ? 'termin' : 'gorev';
       document.getElementById('mType').value = defaultType;
 
@@ -684,8 +715,10 @@
 
     function openEditTask(id, source, key) {
       let item = null;
+      // GÜNCEL DB'den OKU
       if (source === 'inbox') item = db.inbox.find(x => x.id === id);
-      else item = db.days[key].find(x => x.id === id);
+      else item = (db.days[key] || []).find(x => x.id === id);
+      
       if (!item) return;
 
       editState = { id, source, key };
@@ -707,17 +740,22 @@
       const note = document.getElementById('mNote').value;
 
       if (editState) {
+        // KAYDETME ANINDA TEKRAR DB'den BUL (Stale Reference Fix)
         let list = (editState.source === 'inbox') ? db.inbox : db.days[editState.key];
-        let item = list.find(x => x.id === editState.id);
-        if (item) { 
-          item.text = text; item.time = time; item.type = type; item.tag = tag; item.note = note;
+        if(list){
+            let item = list.find(x => x.id === editState.id);
+            if (item) { 
+              item.text = text; item.time = time; item.type = type; item.tag = tag; item.note = note;
+            }
         }
       } else {
         const newItem = { id: Date.now().toString(), text, time, type, tag, note, done: false };
         if(currentModalDest === 'inbox'){ db.inbox = db.inbox || []; db.inbox.push(newItem); } 
         else { const k = dayKey(selectedDate); db.days[k] = db.days[k] || []; db.days[k].push(newItem); }
       }
-      saveDB(); modalOverlay.style.display = 'none';
+      saveDB(); 
+      renderCurrentPage(); // Listeyi güncelle ki notlar görünsün
+      modalOverlay.style.display = 'none';
     };
 
     const btnLogin = document.getElementById('btnLogin'); const btnSignup = document.getElementById('btnSignup'); const authError = document.getElementById('authError');
