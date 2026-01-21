@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <meta name="theme-color" content="#111111" />
-  <title>Minimal To-Do Mobile (PC Sync)</title>
+  <title>Minimal To-Do Mobile (Final Sync)</title>
   
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/png" href="icon-512.png" />
@@ -497,7 +497,8 @@
       db.habitHistory[id] = history;
       
       saveDB();
-      renderHabits();
+      // FIX: renderHabits yerine renderCurrentPage kullanarak klonlamayı önlüyoruz
+      renderCurrentPage();
     }
 
     function calculateStreak(historyArray){
@@ -643,10 +644,21 @@
             if(db.habitHistory && db.habitHistory[id]) delete db.habitHistory[id];
             
             saveDB(); 
-            renderHabits(); 
+            // FIX: renderHabits yerine renderCurrentPage
+            renderCurrentPage(); 
         }); 
     }
-    function addNewHabit(){ customPrompt("Yeni Alışkanlık", "Örn: Kitap", (val) => { if(val && val.trim()) { db.habits = db.habits || []; db.habits.push({ id: Date.now().toString(), name: val.trim() }); saveDB(); renderHabits(); } }); }
+    function addNewHabit(){ 
+        customPrompt("Yeni Alışkanlık", "Örn: Kitap", (val) => { 
+            if(val && val.trim()) { 
+                db.habits = db.habits || []; 
+                db.habits.push({ id: Date.now().toString(), name: val.trim() }); 
+                saveDB(); 
+                // FIX: renderHabits yerine renderCurrentPage
+                renderCurrentPage(); 
+            } 
+        }); 
+    }
     function deleteTask(id, source, key){ customConfirm("Sil", "Silinsin mi?", () => { if(source==='inbox') db.inbox=db.inbox.filter(x=>x.id!==id); else { db.days[key]=db.days[key].filter(x=>x.id!==id); if(db.days[key].length===0) delete db.days[key]; } saveDB(); renderCurrentPage(); }); }
 
     function createTaskCard(item, source, sourceKey){
