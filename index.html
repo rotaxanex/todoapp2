@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <meta name="theme-color" content="#111111" />
-  <title>Minimal To-Do v3</title>
+  <title>Minimal To-Do v4</title>
   
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/png" href="icon-512.png" />
@@ -243,7 +243,6 @@
       _supabase.channel('public:user_data')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'user_data' }, payload => {
           if(payload.new && payload.new.id === currentUser.id){
-            // Senkronizasyon anında DB referansını yenile
             db = payload.new.content;
             renderCurrentPage();
           }
@@ -266,7 +265,6 @@
       if(currentUser) {
         _supabase.from('user_data').upsert({ id: currentUser.id, content: db, updated_at: new Date() }).then();
       }
-      // renderCurrentPage(); // Render'ı her save'de çağırmıyoruz, sadece gerekli yerlerde.
     }
 
     function handleTouchStart(e) { touchStartX = e.changedTouches[0].screenX; }
@@ -293,6 +291,7 @@
     }
 
     function renderCurrentPage(){
+      // SAYFAYI TEMIZLEME KISMI
       pageContainer.innerHTML = '';
       if(currentPage === 'daily') renderDaily();
       else if(currentPage === 'calendar') renderCalendar();
@@ -311,12 +310,10 @@
       const typeWeight = { 'termin': 1, 'hedef': 2, 'gorev': 3 };
       
       return [...tasks].sort((a, b) => {
-        // 1. Tip
         const tA = typeWeight[a.type] || 3;
         const tB = typeWeight[b.type] || 3;
         if(tA !== tB) return tA - tB;
 
-        // 2. Saat
         const getMins = (timeStr) => {
             if(!timeStr) return 9999;
             const [h, m] = timeStr.split(':').map(Number);
@@ -326,7 +323,6 @@
         const timeB = getMins(b.time);
         if(timeA !== timeB) return timeA - timeB;
 
-        // 3. Tag
         let tagIndexA = db.tags.findIndex(t => t.name === a.tag);
         let tagIndexB = db.tags.findIndex(t => t.name === b.tag);
         if(tagIndexA === -1) tagIndexA = 999;
@@ -464,17 +460,15 @@
           </div>
           <button style="background:none; border:none; color:#555;" onclick="deleteHabit('${h.id}')">🗑</button>
         `;
-        // KRİTİK DÜZELTME: Doğrudan fonksiyon çağırmak yerine ID ile işlem yapıyoruz.
         const checkBtn = div.querySelector('.check-circle');
         checkBtn.onclick = (e) => { e.stopPropagation(); toggleHabit(h.id); };
         pageContainer.appendChild(div);
       });
     }
 
-    // GÜNCEL VERİYE ERİŞİM İÇİN ID İLE ÇAĞIRMA
+    // DÜZELTME: renderHabits yerine renderCurrentPage çağırarak temizlenmesini sağlıyoruz
     function toggleHabit(id){
       const todayK = dayKey(new Date());
-      // db.habits'i taze referans üzerinden bul
       const hIndex = db.habits.findIndex(x => x.id === id);
       if(hIndex === -1) return;
       
@@ -485,7 +479,7 @@
       else h.history.push(todayK);
       
       saveDB();
-      renderHabits(); // UI'ı elle güncelle
+      renderCurrentPage(); // BURASI DÜZELTİLDİ (Sayfayı temizle ve yeniden çiz)
     }
 
     function calculateStreak(historyArray){
@@ -505,7 +499,6 @@
     }
 
     function openHabitDetail(id){
-      // Taze veriyi bul
       const h = db.habits.find(x => x.id === id);
       if(!h) return;
       selectedHabitId = id;
@@ -557,7 +550,6 @@
     function renderSettings(){
       pageContainer.innerHTML = `<h2>Tag Ayarları</h2><div style="color:var(--muted); font-size:12px; margin-bottom:15px;">Okları kullanarak sıralamayı değiştirebilirsiniz.</div>`;
       
-      // TAG EKLEME
       const adder = document.createElement('div'); 
       adder.style.marginBottom='15px';
       adder.innerHTML = `
@@ -578,7 +570,6 @@
         db.tags.forEach((t, index) => {
           const row = document.createElement('div'); 
           row.className = 'tag-row'; 
-          // DRAG & DROP YERİNE OK BUTONLARI (MOBİL UYUMLU)
           row.innerHTML = `
             <div style="display:flex; flex-direction:column; gap:2px;">
                 <div class="tag-ctrl-btn" onclick="moveTag(${index}, -1)">▲</div>
@@ -600,15 +591,12 @@
       pageContainer.appendChild(exitBtn);
     }
 
-    // YENİ SIRALAMA FONKSİYONU
     function moveTag(index, direction) {
         if (direction === -1 && index > 0) {
-            // Yukarı
             const temp = db.tags[index];
             db.tags[index] = db.tags[index - 1];
             db.tags[index - 1] = temp;
         } else if (direction === 1 && index < db.tags.length - 1) {
-            // Aşağı
             const temp = db.tags[index];
             db.tags[index] = db.tags[index + 1];
             db.tags[index + 1] = temp;
@@ -626,8 +614,11 @@
     function removeTag(name){ customConfirm("Tag Sil", `"${name}" silinsin mi?`, () => { db.tags = db.tags.filter(t => t.name !== name); saveDB(); renderSettings(); }); }
     function logoutApp(){ customConfirm("Çıkış Yap", "Emin misin?", async () => { try{ await _supabase.auth.signOut(); }catch(e){} localStorage.clear(); window.location.reload(); }); }
     
-    function deleteHabit(id){ customConfirm("Sil", "Silinsin mi?", () => { db.habits = db.habits.filter(h => h.id !== id); saveDB(); renderHabits(); }); }
-    function addNewHabit(){ customPrompt("Yeni Alışkanlık", "Örn: Kitap", (val) => { if(val && val.trim()) { db.habits = db.habits || []; db.habits.push({ id: Date.now().toString(), name: val.trim(), history:[] }); saveDB(); renderHabits(); } }); }
+    // DÜZELTME: renderCurrentPage kullanıldı
+    function deleteHabit(id){ customConfirm("Sil", "Silinsin mi?", () => { db.habits = db.habits.filter(h => h.id !== id); saveDB(); renderCurrentPage(); }); }
+    // DÜZELTME: renderCurrentPage kullanıldı
+    function addNewHabit(){ customPrompt("Yeni Alışkanlık", "Örn: Kitap", (val) => { if(val && val.trim()) { db.habits = db.habits || []; db.habits.push({ id: Date.now().toString(), name: val.trim(), history:[] }); saveDB(); renderCurrentPage(); } }); }
+    
     function deleteTask(id, source, key){ customConfirm("Sil", "Silinsin mi?", () => { if(source==='inbox') db.inbox=db.inbox.filter(x=>x.id!==id); else { db.days[key]=db.days[key].filter(x=>x.id!==id); if(db.days[key].length===0) delete db.days[key]; } saveDB(); renderCurrentPage(); }); }
 
     function createTaskCard(item, source, sourceKey){
@@ -659,7 +650,6 @@
         </div>
         <button style="background:none; border:none; color:#555; font-size:16px;" onclick="deleteTask('${item.id}', '${source}', '${sourceKey}')">✕</button>
       `;
-      // KRİTİK: Burada item.done = !item.done yapmak yerine, ID ile global DB'yi bulup değiştiriyoruz.
       el.querySelector('.check-circle').onclick = (e) => { 
           e.stopPropagation(); 
           toggleTaskStatus(item.id, source, sourceKey);
@@ -667,7 +657,6 @@
       return el;
     }
 
-    // YENİ GÜVENLİ STATUS DEĞİŞTİRİCİ
     function toggleTaskStatus(id, source, key) {
         let foundItem;
         if (source === 'inbox') {
@@ -679,7 +668,7 @@
         if (foundItem) {
             foundItem.done = !foundItem.done;
             saveDB();
-            renderCurrentPage(); // Değişikliği anında yansıt
+            renderCurrentPage(); 
         }
     }
 
@@ -715,7 +704,6 @@
 
     function openEditTask(id, source, key) {
       let item = null;
-      // GÜNCEL DB'den OKU
       if (source === 'inbox') item = db.inbox.find(x => x.id === id);
       else item = (db.days[key] || []).find(x => x.id === id);
       
@@ -740,7 +728,6 @@
       const note = document.getElementById('mNote').value;
 
       if (editState) {
-        // KAYDETME ANINDA TEKRAR DB'den BUL (Stale Reference Fix)
         let list = (editState.source === 'inbox') ? db.inbox : db.days[editState.key];
         if(list){
             let item = list.find(x => x.id === editState.id);
@@ -754,7 +741,7 @@
         else { const k = dayKey(selectedDate); db.days[k] = db.days[k] || []; db.days[k].push(newItem); }
       }
       saveDB(); 
-      renderCurrentPage(); // Listeyi güncelle ki notlar görünsün
+      renderCurrentPage(); 
       modalOverlay.style.display = 'none';
     };
 
