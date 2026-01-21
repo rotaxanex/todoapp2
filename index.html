@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <meta name="theme-color" content="#111111" />
-  <title>Minimal To-Do v4</title>
+  <title>Minimal To-Do Mobile (PC Sync)</title>
   
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/png" href="icon-512.png" />
@@ -213,7 +213,8 @@
     let _supabase = null;
     if(SUPABASE_URL && SUPABASE_KEY) _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let db = { days:{}, inbox:[], tags:[], habits:[] };
+    // PC UYUMLULUĞU: habitHistory eklendi
+    let db = { days:{}, inbox:[], tags:[], habits:[], habitHistory:{} };
     let currentUser = null;
     let currentPage = 'daily';
     let selectedDate = new Date();
@@ -240,10 +241,13 @@
       await loadRemoteDB();
       if(!db.tags || db.tags.length===0) db.tags = [{name:'genel', color:'#7dd3fc'}];
 
+      // REALTIME LISTENER: PC'de yapılan değişiklikler telefona anlık gelsin
       _supabase.channel('public:user_data')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'user_data' }, payload => {
           if(payload.new && payload.new.id === currentUser.id){
             db = payload.new.content;
+            // PC uyumluluğu için habitHistory kontrolü
+            if(!db.habitHistory) db.habitHistory = {};
             renderCurrentPage();
           }
         })
@@ -255,8 +259,14 @@
     async function loadRemoteDB(){
       const local = localStorage.getItem('mini_todo_v1');
       if(local) { try { db = JSON.parse(local); } catch(e){} }
+      
       const { data } = await _supabase.from('user_data').select('content').eq('id', currentUser.id).single();
-      if(data && data.content) { db = data.content; localStorage.setItem('mini_todo_v1', JSON.stringify(db)); }
+      if(data && data.content) { 
+        db = data.content; 
+        // PC UYUMLULUĞU
+        if(!db.habitHistory) db.habitHistory = {};
+        localStorage.setItem('mini_todo_v1', JSON.stringify(db)); 
+      }
       else saveDB();
     }
 
@@ -291,7 +301,6 @@
     }
 
     function renderCurrentPage(){
-      // SAYFAYI TEMIZLEME KISMI
       pageContainer.innerHTML = '';
       if(currentPage === 'daily') renderDaily();
       else if(currentPage === 'calendar') renderCalendar();
@@ -310,10 +319,12 @@
       const typeWeight = { 'termin': 1, 'hedef': 2, 'gorev': 3 };
       
       return [...tasks].sort((a, b) => {
+        // 1. Tip
         const tA = typeWeight[a.type] || 3;
         const tB = typeWeight[b.type] || 3;
         if(tA !== tB) return tA - tB;
 
+        // 2. Saat
         const getMins = (timeStr) => {
             if(!timeStr) return 9999;
             const [h, m] = timeStr.split(':').map(Number);
@@ -323,6 +334,7 @@
         const timeB = getMins(b.time);
         if(timeA !== timeB) return timeA - timeB;
 
+        // 3. Tag
         let tagIndexA = db.tags.findIndex(t => t.name === a.tag);
         let tagIndexB = db.tags.findIndex(t => t.name === b.tag);
         if(tagIndexA === -1) tagIndexA = 999;
@@ -442,11 +454,15 @@
       pageContainer.innerHTML += `<div style="color:var(--muted); margin-bottom:15px; font-size:12px;">Üzerine tıkla, geçmişi gör.</div>`;
 
       const todayK = dayKey(new Date());
+      
+      // PC UYUMLULUĞU: History kontrolü
+      if(!db.habitHistory) db.habitHistory = {};
 
       (db.habits || []).forEach(h => {
-        if(!h.history) h.history = [];
-        const isDoneToday = h.history.includes(todayK);
-        const streak = calculateStreak(h.history);
+        // PC UYUMLULUĞU: db.habitHistory'den oku
+        const history = db.habitHistory[h.id] || [];
+        const isDoneToday = history.includes(todayK);
+        const streak = calculateStreak(history);
 
         const div = document.createElement('div');
         div.className = 'habit-row';
@@ -466,20 +482,22 @@
       });
     }
 
-    // DÜZELTME: renderHabits yerine renderCurrentPage çağırarak temizlenmesini sağlıyoruz
+    // PC UYUMLULUĞU: habitHistory'e yaz
     function toggleHabit(id){
       const todayK = dayKey(new Date());
-      const hIndex = db.habits.findIndex(x => x.id === id);
-      if(hIndex === -1) return;
       
-      const h = db.habits[hIndex];
-      if(!h.history) h.history = [];
+      if(!db.habitHistory) db.habitHistory = {};
+      if(!db.habitHistory[id]) db.habitHistory[id] = [];
       
-      if(h.history.includes(todayK)) h.history = h.history.filter(d => d !== todayK);
-      else h.history.push(todayK);
+      let history = db.habitHistory[id];
+      
+      if(history.includes(todayK)) history = history.filter(d => d !== todayK);
+      else history.push(todayK);
+      
+      db.habitHistory[id] = history;
       
       saveDB();
-      renderCurrentPage(); // BURASI DÜZELTİLDİ (Sayfayı temizle ve yeniden çiz)
+      renderHabits();
     }
 
     function calculateStreak(historyArray){
@@ -515,11 +533,14 @@
     function renderHabitDetailModal(){
       const h = db.habits.find(x => x.id === selectedHabitId);
       if(!h) return;
+      
+      // PC UYUMLULUĞU: History'i external objeden al
+      const history = (db.habitHistory && db.habitHistory[selectedHabitId]) ? db.habitHistory[selectedHabitId] : [];
 
       document.getElementById('habitDetailTitle').textContent = h.name;
       document.getElementById('habitDetailMonth').textContent = selectedHabitMonth.toLocaleDateString('tr-TR', {month:'long', year:'numeric'});
       
-      const streak = calculateStreak(h.history);
+      const streak = calculateStreak(history);
       document.getElementById('habitDetailStats').textContent = `🔥 Güncel Seri: ${streak} Gün`;
 
       const calGrid = document.getElementById('habitCalendar');
@@ -538,7 +559,8 @@
       for(let d=1; d<=daysInMonth; d++){
         const current = new Date(year, month, d);
         const k = dayKey(current);
-        const isDone = (h.history || []).includes(k);
+        // PC UYUMLULUĞU
+        const isDone = history.includes(k);
         
         const cell = document.createElement('div');
         cell.className = `habit-cal-cell ${isDone ? 'done' : ''}`;
@@ -614,11 +636,17 @@
     function removeTag(name){ customConfirm("Tag Sil", `"${name}" silinsin mi?`, () => { db.tags = db.tags.filter(t => t.name !== name); saveDB(); renderSettings(); }); }
     function logoutApp(){ customConfirm("Çıkış Yap", "Emin misin?", async () => { try{ await _supabase.auth.signOut(); }catch(e){} localStorage.clear(); window.location.reload(); }); }
     
-    // DÜZELTME: renderCurrentPage kullanıldı
-    function deleteHabit(id){ customConfirm("Sil", "Silinsin mi?", () => { db.habits = db.habits.filter(h => h.id !== id); saveDB(); renderCurrentPage(); }); }
-    // DÜZELTME: renderCurrentPage kullanıldı
-    function addNewHabit(){ customPrompt("Yeni Alışkanlık", "Örn: Kitap", (val) => { if(val && val.trim()) { db.habits = db.habits || []; db.habits.push({ id: Date.now().toString(), name: val.trim(), history:[] }); saveDB(); renderCurrentPage(); } }); }
-    
+    function deleteHabit(id){ 
+        customConfirm("Sil", "Silinsin mi?", () => { 
+            db.habits = db.habits.filter(h => h.id !== id); 
+            // PC UYUMLULUĞU: habitHistory temizliği
+            if(db.habitHistory && db.habitHistory[id]) delete db.habitHistory[id];
+            
+            saveDB(); 
+            renderHabits(); 
+        }); 
+    }
+    function addNewHabit(){ customPrompt("Yeni Alışkanlık", "Örn: Kitap", (val) => { if(val && val.trim()) { db.habits = db.habits || []; db.habits.push({ id: Date.now().toString(), name: val.trim() }); saveDB(); renderHabits(); } }); }
     function deleteTask(id, source, key){ customConfirm("Sil", "Silinsin mi?", () => { if(source==='inbox') db.inbox=db.inbox.filter(x=>x.id!==id); else { db.days[key]=db.days[key].filter(x=>x.id!==id); if(db.days[key].length===0) delete db.days[key]; } saveDB(); renderCurrentPage(); }); }
 
     function createTaskCard(item, source, sourceKey){
@@ -638,6 +666,7 @@
       el.style.borderLeft = `4px solid ${typeColor}`;
       el.style.background = `linear-gradient(90deg, ${tagColor}25 0%, var(--card) 100%)`;
 
+      // PC UYUMLULUĞU: 'note' yerine 'notes' kullanılıyor
       el.innerHTML = `
         <div class="check-circle ${item.done ? 'checked' : ''}">✓</div>
         <div class="task-content" onclick="openEditTask('${item.id}', '${source}', '${sourceKey}')">
@@ -646,7 +675,7 @@
             ${item.time ? `<span style="font-size:11px; color:var(--muted);">⏰ ${item.time}</span>` : ''}
             ${item.tag ? `<span style="font-size:10px; color:${tagColor}; border:1px solid ${tagColor}; padding:1px 4px; border-radius:4px;">${item.tag}</span>` : ''}
           </div>
-          ${item.note ? `<div class="task-note">${item.note}</div>` : ''}
+          ${item.notes ? `<div class="task-note">${item.notes}</div>` : ''}
         </div>
         <button style="background:none; border:none; color:#555; font-size:16px;" onclick="deleteTask('${item.id}', '${source}', '${sourceKey}')">✕</button>
       `;
@@ -716,7 +745,10 @@
       document.getElementById('mTime').value = item.time || '';
       document.getElementById('mType').value = item.type || 'gorev';
       document.getElementById('mTag').value = item.tag || '';
-      document.getElementById('mNote').value = item.note || ''; 
+      
+      // PC UYUMLULUĞU: 'notes' key'ini oku
+      document.getElementById('mNote').value = item.notes || ''; 
+      
       modalOverlay.style.display = 'flex';
     }
 
@@ -732,11 +764,14 @@
         if(list){
             let item = list.find(x => x.id === editState.id);
             if (item) { 
-              item.text = text; item.time = time; item.type = type; item.tag = tag; item.note = note;
+              item.text = text; item.time = time; item.type = type; item.tag = tag; 
+              // PC UYUMLULUĞU: 'notes' key'ine kaydet
+              item.notes = note; 
             }
         }
       } else {
-        const newItem = { id: Date.now().toString(), text, time, type, tag, note, done: false };
+        // PC UYUMLULUĞU: 'notes' key'ini kullan
+        const newItem = { id: Date.now().toString(), text, time, type, tag, notes: note, done: false };
         if(currentModalDest === 'inbox'){ db.inbox = db.inbox || []; db.inbox.push(newItem); } 
         else { const k = dayKey(selectedDate); db.days[k] = db.days[k] || []; db.days[k].push(newItem); }
       }
