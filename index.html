@@ -425,12 +425,16 @@
       pageContainer.appendChild(bottomSection);
     }
 
-    function renderInbox(){
+        function renderInbox(){
       pageContainer.innerHTML = `<h2>Brain Dump</h2><div style="color:var(--muted); margin-bottom:15px;">Aklına geleni buraya at.</div>`;
-      const items = db.inbox || [];
+      
+      // DEĞİŞİKLİK BURADA: db.inbox'ı sortTasks fonksiyonundan geçiriyoruz
+      const items = sortTasks(db.inbox || []);
+      
       if(items.length===0) pageContainer.innerHTML += `<div style="color:#555">Inbox boş.</div>`;
       items.forEach(item => pageContainer.appendChild(createTaskCard(item, 'inbox', null)));
     }
+
 
     function renderHabits(){
       const header = document.createElement('div');
