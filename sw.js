@@ -1,10 +1,10 @@
-const CACHE_NAME = "minimal-todo-v15-cloud";
+const CACHE_NAME = "minimal-todo-v16-ghpages";
 const ASSETS = [
-  "/",
-  "/index.html",
-  "/manifest.webmanifest",
-  "/icon-192.png",
-  "/icon-512.png"
+  ".",                 // /REPOADI/
+  "index.html",
+  "manifest.webmanifest",
+  "icon-192.png",
+  "icon-512.png"
 ];
 
 self.addEventListener("install", (e) => {
@@ -24,21 +24,14 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
 
-  // Supabase / CDN -> cacheleme
   if (url.hostname.includes("supabase.co") || url.hostname.includes("cdn.jsdelivr.net") || url.hostname.includes("unpkg.com")) {
     return;
   }
 
-  // Sayfa gezintilerinde (navigation) index fallback
   if (e.request.mode === "navigate") {
-    e.respondWith(
-      fetch(e.request).catch(() => caches.match("/index.html"))
-    );
+    e.respondWith(fetch(e.request).catch(() => caches.match("index.html")));
     return;
   }
 
-  // Diğer şeylerde network-first, cache fallback
-  e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
-  );
+  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
 });
