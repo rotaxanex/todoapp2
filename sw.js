@@ -1,52 +1,44 @@
-const CACHE_NAME = 'minimal-todo-v15-cloud'; // Versiyonu değiştirdik
+const CACHE_NAME = "minimal-todo-v15-cloud";
 const ASSETS = [
-  './',
-  './index.html',
-  './manifest.webmanifest',
-  // Eğer ikonların varsa buraya ekle:
-  // './icon-192.png',
-  // './icon-512.png'
+  "/",
+  "/index.html",
+  "/manifest.webmanifest",
+  "/icon-192.png",
+  "/icon-512.png"
 ];
 
-// 1. Kurulum (Install) - Dosyaları hafızaya al
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    })
-  );
-  self.skipWaiting(); // Yeni SW hemen aktif olsun
+self.addEventListener("install", (e) => {
+  e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
+  self.skipWaiting();
 });
 
-// 2. Aktifleştirme (Activate) - Eski versiyonları sil
-self.addEventListener('activate', (e) => {
+self.addEventListener("activate", (e) => {
   e.waitUntil(
-    caches.keys().then((keyList) => {
-      return Promise.all(
-        keyList.map((key) => {
-          if (key !== CACHE_NAME) {
-            console.log('[SW] Eski cache siliniyor:', key);
-            return caches.delete(key);
-          }
-        })
-      );
-    })
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+    )
   );
   self.clients.claim();
 });
 
-// 3. Yakalama (Fetch) - İnternet varsa oradan, yoksa hafızadan
-self.addEventListener('fetch', (e) => {
-  // Supabase isteklerini veya dış linkleri cache'lemeye çalışma (Hata verir)
-  if (e.request.url.includes('supabase.co') || e.request.url.includes('unpkg.com')) {
-    return; // Bunları tarayıcı normal yoldan çeksin
+self.addEventListener("fetch", (e) => {
+  const url = new URL(e.request.url);
+
+  // Supabase / CDN -> cacheleme
+  if (url.hostname.includes("supabase.co") || url.hostname.includes("cdn.jsdelivr.net") || url.hostname.includes("unpkg.com")) {
+    return;
   }
 
+  // Sayfa gezintilerinde (navigation) index fallback
+  if (e.request.mode === "navigate") {
+    e.respondWith(
+      fetch(e.request).catch(() => caches.match("/index.html"))
+    );
+    return;
+  }
+
+  // Diğer şeylerde network-first, cache fallback
   e.respondWith(
-    fetch(e.request)
-      .catch(() => {
-        // İnternet yoksa cache'e bak
-        return caches.match(e.request);
-      })
+    fetch(e.request).catch(() => caches.match(e.request))
   );
 });
