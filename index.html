@@ -379,30 +379,46 @@
     }
 
     // --- HABITS PAGE ---
-    function renderHabits(){
-      const head = document.createElement('div');
-      head.style.cssText = 'display:flex; justify-content:space-between; align-items:center;';
-      head.innerHTML = `<h2>Alışkanlıklar</h2><button class="btn" onclick="addNewHabit()">+ Ekle</button>`;
-      pageContainer.appendChild(head);
-      const todayK = dayKey(new Date());
-      (db.habits || []).forEach(h => {
-        const hist = db.habitHistory[h.id] || [];
-        const isDone = hist.includes(todayK);
-        const streak = calculateStreak(hist);
-        const div = document.createElement('div');
-        div.className = 'habit-row';
-        div.innerHTML = `
-          <div class="habit-left" onclick="openHabitDetail('${h.id}')">
-            <div class="check-circle ${isDone ? 'checked' : ''}" style="margin-right:10px;">✓</div>
-            <div style="${isDone ? 'opacity:0.5' : ''}">${h.name}</div>
-            ${streak > 0 ? `<div class="streak-badge">🔥 ${streak}</div>` : ''}
-          </div>
-          <button style="background:none; border:none; color:#555;" onclick="deleteHabit('${h.id}')">🗑</button>
-        `;
-        div.querySelector('.check-circle').onclick = (e) => { e.stopPropagation(); toggleHabit(h.id); };
-        pageContainer.appendChild(div);
-      });
-    }
+   function renderHabits(){
+  const head = document.createElement('div');
+  head.style.cssText = 'display:flex; justify-content:space-between; align-items:center;';
+  head.innerHTML = `<h2>Alışkanlıklar</h2><button class="btn" onclick="addNewHabit()">+ Ekle</button>`;
+  pageContainer.appendChild(head);
+
+  const todayK = dayKey(new Date());
+  const habitsSorted = [...(db.habits || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+  habitsSorted.forEach(h => {
+    const hist = db.habitHistory[h.id] || [];
+    const isDone = hist.includes(todayK);
+    const streak = calculateStreak(hist);
+
+    const div = document.createElement('div');
+    div.className = 'habit-row';
+    div.style.borderLeft = `4px solid ${h.color || 'var(--accent)'}`;
+    div.style.background = `linear-gradient(90deg, ${(h.color || '#7dd3fc')}15 0%, var(--card) 100%)`;
+
+    div.innerHTML = `
+      <div class="habit-left" onclick="openHabitDetail('${h.id}')">
+        <div class="check-circle ${isDone ? 'checked' : ''}" style="margin-right:10px;">✓</div>
+        <div style="${isDone ? 'opacity:0.5' : ''}">${h.name}</div>
+        ${streak > 0 ? `<div class="streak-badge">🔥 ${streak}</div>` : ''}
+      </div>
+
+      <button style="background:none; border:none; font-size:16px; cursor:pointer;" onclick="event.stopPropagation(); changeHabitColor('${h.id}')">🎨</button>
+      <button style="background:none; border:none; color:#555; font-size:14px; cursor:pointer;" onclick="event.stopPropagation(); moveHabit('${h.id}', -1)">▲</button>
+      <button style="background:none; border:none; color:#555; font-size:14px; cursor:pointer;" onclick="event.stopPropagation(); moveHabit('${h.id}', 1)">▼</button>
+      <button style="background:none; border:none; color:#555;" onclick="event.stopPropagation(); deleteHabit('${h.id}')">🗑</button>
+    `;
+
+    div.querySelector('.check-circle').onclick = (e) => {
+      e.stopPropagation();
+      toggleHabit(h.id);
+    };
+
+    pageContainer.appendChild(div);
+  });
+}
 
     function toggleHabit(id){
       const tk = dayKey(new Date());
@@ -456,7 +472,62 @@
         grid.innerHTML += `<div class="habit-cal-cell ${done ? 'done' : ''}">${d}</div>`;
       }
     }
+function addNewHabit(){
+  const name = window.prompt("Alışkanlık adı?");
+  if(!name || !name.trim()) return;
 
+  const color = window.prompt("Renk (hex) ör: #7dd3fc", "#7dd3fc") || "#7dd3fc";
+
+  db.habits = db.habits || [];
+  db.habits.push({
+    id: Date.now().toString(),
+    name: name.trim(),
+    color: color.trim(),
+    order: db.habits.length
+  });
+
+  saveDB();
+  renderCurrentPage();
+}
+
+function deleteHabit(id){
+  customConfirm("Sil", "Bu alışkanlık silinsin mi?", () => {
+    db.habits = (db.habits || []).filter(h => h.id !== id);
+    if(db.habitHistory && db.habitHistory[id]) delete db.habitHistory[id];
+    saveDB();
+    renderCurrentPage();
+  });
+}
+
+function changeHabitColor(id){
+  const h = (db.habits || []).find(x => x.id === id);
+  if(!h) return;
+
+  const picked = window.prompt("Yeni renk (hex) ör: #34d399", h.color || "#7dd3fc");
+  if(!picked) return;
+
+  h.color = picked.trim();
+  saveDB();
+  renderCurrentPage();
+}
+
+function moveHabit(id, dir){
+  db.habits = db.habits || [];
+  const idx = db.habits.findIndex(h => h.id === id);
+  if(idx === -1) return;
+
+  const newIndex = idx + dir;
+  if(newIndex < 0 || newIndex >= db.habits.length) return;
+
+  const temp = db.habits[idx];
+  db.habits[idx] = db.habits[newIndex];
+  db.habits[newIndex] = temp;
+
+  db.habits.forEach((h, i) => h.order = i);
+
+  saveDB();
+  renderCurrentPage();
+}
     // --- SETTINGS PAGE ---
     function renderSettings(){
       pageContainer.innerHTML = `<h2>Ayarlar</h2>`;
