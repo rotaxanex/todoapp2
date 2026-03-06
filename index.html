@@ -405,7 +405,8 @@
         ${streak > 0 ? `<div class="streak-badge">🔥 ${streak}</div>` : ''}
       </div>
 
-      <button style="background:none; border:none; font-size:16px; cursor:pointer;" onclick="event.stopPropagation(); changeHabitColor('${h.id}')">🎨</button>
+      <button style="background:none; border:none; font-size:16px; cursor:pointer;" onclick="event.stopPropagation(); document.getElementById('habitColor_${h.id}').click()">🎨</button>
+      <input type="color" id="habitColor_${h.id}" value="${h.color || '#7dd3fc'}" style="display:none;" onchange="setHabitColor('${h.id}', this.value)">
       <button style="background:none; border:none; color:#555; font-size:14px; cursor:pointer;" onclick="event.stopPropagation(); moveHabit('${h.id}', -1)">▲</button>
       <button style="background:none; border:none; color:#555; font-size:14px; cursor:pointer;" onclick="event.stopPropagation(); moveHabit('${h.id}', 1)">▼</button>
       <button style="background:none; border:none; color:#555;" onclick="event.stopPropagation(); deleteHabit('${h.id}')">🗑</button>
@@ -476,13 +477,11 @@ function addNewHabit(){
   const name = window.prompt("Alışkanlık adı?");
   if(!name || !name.trim()) return;
 
-  const color = window.prompt("Renk (hex) ör: #7dd3fc", "#7dd3fc") || "#7dd3fc";
-
   db.habits = db.habits || [];
   db.habits.push({
     id: Date.now().toString(),
     name: name.trim(),
-    color: color.trim(),
+    color: "#7dd3fc",
     order: db.habits.length
   });
 
@@ -499,14 +498,11 @@ function deleteHabit(id){
   });
 }
 
-function changeHabitColor(id){
+function setHabitColor(id, color){
   const h = (db.habits || []).find(x => x.id === id);
   if(!h) return;
 
-  const picked = window.prompt("Yeni renk (hex) ör: #34d399", h.color || "#7dd3fc");
-  if(!picked) return;
-
-  h.color = picked.trim();
+  h.color = color;
   saveDB();
   renderCurrentPage();
 }
