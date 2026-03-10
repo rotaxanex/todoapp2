@@ -428,6 +428,19 @@
       else db.habitHistory[id].push(tk);
       saveDB(); renderCurrentPage();
     }
+    function toggleHabitForDate(id, dateKey){
+  if(!db.habitHistory[id]) db.habitHistory[id] = [];
+
+  if(db.habitHistory[id].includes(dateKey)) {
+    db.habitHistory[id] = db.habitHistory[id].filter(x => x !== dateKey);
+  } else {
+    db.habitHistory[id].push(dateKey);
+  }
+
+  saveDB();
+  renderHabitDetailModal();
+  if(currentPage === 'habits') renderCurrentPage();
+}
 
     function calculateStreak(history){
       if(!history || history.length === 0) return 0;
@@ -468,10 +481,17 @@
       const days = new Date(y, m+1, 0).getDate();
       for(let i=0; i<start; i++) grid.innerHTML += `<div></div>`;
       for(let d=1; d<=days; d++){
-        const k = dayKey(new Date(y, m, d));
-        const done = hist.includes(k);
-        grid.innerHTML += `<div class="habit-cal-cell ${done ? 'done' : ''}">${d}</div>`;
-      }
+  const k = dayKey(new Date(y, m, d));
+  const done = hist.includes(k);
+
+  const cell = document.createElement('div');
+  cell.className = `habit-cal-cell ${done ? 'done' : ''}`;
+  cell.textContent = d;
+  cell.style.cursor = 'pointer';
+  cell.onclick = () => toggleHabitForDate(selectedHabitId, k);
+
+  grid.appendChild(cell);
+}
     }
 function addNewHabit(){
   const name = window.prompt("Alışkanlık adı?");
