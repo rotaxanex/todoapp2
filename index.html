@@ -91,31 +91,33 @@
     .habit-cal-cell.today { border-color:var(--accent); color:var(--accent); }
 
     /* ===== RUTİN TABLOSU ===== */
-    .rt-toolbar { display:flex; gap:6px; align-items:center; margin-bottom:10px; flex-wrap:wrap; }
-    .seg { display:flex; background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
-    .seg button { border:0; background:transparent; color:var(--muted); padding:6px 12px; font-size:12px; cursor:pointer; }
+    .rt-sticky { position:sticky; top:0; z-index:5; background:var(--bg); margin:-16px -16px 6px; padding:12px 16px 6px; box-shadow:0 8px 10px -9px #000; }
+    .rt-toolbar { display:flex; gap:5px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
+    .seg { display:flex; background:var(--card); border:1px solid var(--line); border-radius:9px; overflow:hidden; }
+    .seg button { border:0; background:transparent; color:var(--muted); padding:5px 10px; font-size:11.5px; cursor:pointer; }
     .seg button.active { color:var(--text); background:#2a2a2f; }
-    .rt-mini-btn { background:var(--card); border:1px solid var(--line); color:var(--muted); font-size:11px; padding:6px 9px; border-radius:9px; cursor:pointer; }
-    .ghost-badge { font-size:10px; color:#fbbf24; border:1px solid #fbbf2455; background:#fbbf2412; padding:3px 7px; border-radius:20px; }
+    .rt-mini-btn { background:var(--card); border:1px solid var(--line); color:var(--muted); font-size:10.5px; padding:5px 8px; border-radius:8px; cursor:pointer; }
+    .ghost-badge { font-size:10px; color:#fbbf24; border:1px solid #fbbf2455; background:#fbbf2412; padding:2px 6px; border-radius:20px; }
 
-    .week-strip { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; margin-bottom:14px; }
-    .ws-col { display:flex; flex-direction:column; gap:2px; cursor:pointer; padding:4px 2px; border-radius:8px; border:1px solid transparent; }
+    .week-strip { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+    .ws-col { display:flex; flex-direction:column; gap:2px; cursor:pointer; padding:3px 2px; border-radius:7px; border:1px solid transparent; }
     .ws-col.sel { border-color:var(--accent); background:#7dd3fc0f; }
     .ws-col.today .ws-name { color:var(--accent); }
     .ws-name { font-size:10px; text-align:center; color:var(--muted); font-weight:600; }
-    .ws-date { font-size:9px; text-align:center; color:#555; margin-bottom:2px; }
-    .ws-bars { display:flex; flex-direction:column; gap:1px; }
-    .ws-bar { height:3px; border-radius:1px; background:#232328; }
+    .ws-date { font-size:9px; text-align:center; color:#555; }
+    .ws-bars { display:flex; flex-direction:column; gap:1px; height:42px; margin-top:2px; }
+    .ws-bar { flex:1; min-height:1px; border-radius:1px; background:#232328; }
 
-    .rt-row { display:flex; gap:8px; align-items:stretch; margin-bottom:4px; }
-    .rt-hour { width:52px; flex-shrink:0; font-size:10px; color:var(--muted); display:flex; align-items:center; justify-content:flex-end; padding-right:2px; line-height:1.2; text-align:right; }
-    .rt-block { flex:1; min-width:0; border-radius:10px; border:1px solid var(--line); background:var(--card); padding:10px 12px; display:flex; align-items:center; gap:10px; cursor:pointer; min-height:44px; }
-    .rt-block.empty { border-style:dashed; border-color:#26262c; background:transparent; color:#3d3d44; font-size:12px; justify-content:center; min-height:34px; }
+    .rt-row { display:flex; gap:7px; align-items:stretch; margin-bottom:3px; }
+    .rt-hour { width:46px; flex-shrink:0; font-size:9.5px; color:var(--muted); display:flex; align-items:center; justify-content:flex-end; line-height:1.25; text-align:right; }
+    .rt-block { flex:1; min-width:0; border-radius:10px; border:1px solid var(--line); background:var(--card); padding:8px 10px; display:flex; align-items:center; gap:9px; cursor:pointer; min-height:40px; }
+    .rt-block.empty { border-style:dashed; border-color:#26262c; background:transparent; color:#3d3d44; font-size:11px; justify-content:center; min-height:24px; }
     .rt-block.ghost { background-image:repeating-linear-gradient(45deg, rgba(255,255,255,.04) 0 6px, transparent 6px 12px); }
-    .rt-text { flex:1; min-width:0; font-size:14px; overflow-wrap:anywhere; }
+    .rt-text { flex:1; min-width:0; font-size:13.5px; overflow-wrap:anywhere; line-height:1.25; }
     .rt-block.done .rt-text { opacity:.45; text-decoration:line-through; }
     .rt-hb { font-size:10px; color:var(--accent); flex-shrink:0; }
     .rt-now { border-color:var(--frame-termin) !important; box-shadow:0 0 0 1px var(--frame-termin); }
+    .rt-block .check-circle { width:20px; height:20px; margin-top:0; }
 
     .sw-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
     .sw { width:32px; height:32px; border-radius:9px; border:2px solid transparent; cursor:pointer; }
@@ -520,6 +522,7 @@
       if(items[map[page]]) items[map[page]].classList.add('active');
       document.getElementById('fabBtn').style.display = ['daily', 'calendar', 'inbox'].includes(page) ? 'grid' : 'none';
       if(page === 'calendar') calAnchor = new Date(selectedDate);
+      if(page === 'routine') rtScrollToNow = true;
       pageContainer.scrollTop = 0;
       renderCurrentPage();
     }
@@ -867,6 +870,7 @@
     const RT_SWATCHES = ['#7dd3fc','#34d399','#fbbf24','#fb7185','#a78bfa','#f472b6','#38bdf8','#94a3b8'];
     let rtView = 'week';          // 'week' | 'tpl'
     let rtEdit = null;            // { dow, hour, span, color, text, hb }
+    let rtScrollToNow = false;    // sayfaya girildiğinde şu anki saate kaydır
 
     function R(){ if(!db.routine) db.routine = emptyRoutine(); return db.routine; }
     function rtHours(){ const c = R().cfg; return { start:c.start, end:c.end, n:Math.max(1, c.end - c.start) }; }
@@ -941,7 +945,9 @@
       const todayK = dayKey(new Date());
       const now = new Date();
 
-      /* --- gün başlığı --- */
+      /* --- gün başlığı (üstte sabit kalır) --- */
+      const sticky = document.createElement('div');
+      sticky.className = 'rt-sticky';
       const header = document.createElement('div');
       header.className = 'daily-header';
       header.innerHTML = `
@@ -954,7 +960,7 @@
       `;
       header.children[0].onclick = () => changeDay(-1);
       header.children[2].onclick = () => changeDay(1);
-      pageContainer.appendChild(header);
+      sticky.appendChild(header);
 
       /* --- araç çubuğu --- */
       const bar = document.createElement('div');
@@ -996,7 +1002,7 @@
           });
         }));
       }
-      pageContainer.appendChild(bar);
+      sticky.appendChild(bar);
 
       /* --- haftalık genel bakış şeridi (yazısız, sadece renk) --- */
       const strip = document.createElement('div'); strip.className = 'week-strip';
@@ -1028,7 +1034,8 @@
         col.onclick = () => { selectedDate = dd; renderCurrentPage(); };
         strip.appendChild(col);
       }
-      pageContainer.appendChild(strip);
+      sticky.appendChild(strip);
+      pageContainer.appendChild(sticky);
 
       /* --- seçili günün saat listesi --- */
       const theme = R().dayThemes[dow];
@@ -1040,23 +1047,31 @@
       }
 
       let h = H.start;
+      let nowBlock = null;
       while(h < H.end){
         const head = resolveHead(cells, dow, h);
-        const row = document.createElement('div'); row.className = 'rt-row';
-        const lbl = document.createElement('div'); lbl.className = 'rt-hour';
 
+        /* --- boş saat --- */
         if(!head || !head.cell || (!head.cell.t && !head.cell.c)){
-          lbl.textContent = String(h).padStart(2,'0') + ':00';
+          /* FIX: burada onclick doğrudan h'yi kullanıyordu. h döngünün dışında tanımlı
+             tek bir değişken olduğu için, tıklandığı anda değeri hep son saat (23)
+             oluyordu -> her + aynı saati açıyordu. Satır başına kopya alınıyor. */
+          const hourAt = h;
+          const row = document.createElement('div'); row.className = 'rt-row';
+          const lbl = document.createElement('div'); lbl.className = 'rt-hour';
+          lbl.textContent = String(hourAt).padStart(2,'0') + ':00';
           const blk = document.createElement('div');
           blk.className = 'rt-block empty';
           blk.textContent = '+';
-          blk.onclick = () => openRtCell(dow, h);
+          blk.onclick = () => openRtCell(dow, hourAt);
           row.appendChild(lbl); row.appendChild(blk);
           pageContainer.appendChild(row);
           h++;
           continue;
         }
 
+        const row = document.createElement('div'); row.className = 'rt-row';
+        const lbl = document.createElement('div'); lbl.className = 'rt-hour';
         const cell = head.cell;
         const rs = cell.rs || 1;
         const from = Math.max(H.start, head.hour);
@@ -1068,14 +1083,17 @@
 
         const blk = document.createElement('div');
         blk.className = 'rt-block';
-        blk.style.minHeight = (44 + (span - 1) * 30) + 'px';
+        blk.style.minHeight = (40 + (span - 1) * 26) + 'px';
         if(theme && theme.color) blk.style.background = solidMix(theme.color, .08);
         if(cell.c){
           blk.style.background = solidMix(cell.c, .30);
           blk.style.borderColor = cell.c + '66';
         }
         if(ghost) blk.classList.add('ghost');
-        if(rtView === 'week' && dateK === todayK && now.getHours() >= from && now.getHours() < to) blk.classList.add('rt-now');
+        if(rtView === 'week' && dateK === todayK && now.getHours() >= from && now.getHours() < to){
+          blk.classList.add('rt-now');
+          nowBlock = row;
+        }
 
         const isDone = rtView === 'week' && !!R().done[rtDoneKey(dateK, from)];
         if(isDone) blk.classList.add('done');
@@ -1112,6 +1130,14 @@
                  : 'Bu haftaya özel düzen. Sağa/sola kaydırarak gün değiştir.')
         : 'Şablon her hafta tekrar eder.';
       pageContainer.appendChild(hint);
+
+      /* sayfaya ilk girişte doğrudan şu anki saate in */
+      if(rtScrollToNow){
+        rtScrollToNow = false;
+        if(nowBlock) setTimeout(() => {
+          pageContainer.scrollTop = Math.max(0, nowBlock.offsetTop - pageContainer.offsetTop - 120);
+        }, 0);
+      }
     }
 
     function rtToggleDone(dateK, from, to, cell){
