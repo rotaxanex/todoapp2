@@ -119,6 +119,19 @@
     .rt-now { border-color:var(--frame-termin) !important; box-shadow:0 0 0 1px var(--frame-termin); }
     .rt-block .check-circle { width:20px; height:20px; margin-top:0; }
 
+    /* rutin bloğunun altına inen görev/termin satırları */
+    .rt-task { flex:1; min-width:0; margin-left:12px; display:flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:9px; background:#141417; border:1px solid var(--line);
+      border-left:3px solid var(--frame-gorev); font-size:12.5px; cursor:pointer; min-height:32px; }
+    .rt-task.done { opacity:.45; }
+    .rt-task.done .rt-task-text { text-decoration:line-through; }
+    .rt-task-text { flex:1; min-width:0; overflow-wrap:anywhere; line-height:1.25; }
+    .rt-task .check-circle { width:17px; height:17px; margin-top:0; font-size:10px; border-width:1.5px; }
+    .rt-task-tag { font-size:9.5px; padding:1px 5px; border-radius:4px; flex-shrink:0; }
+    .rt-hour.sub { font-size:9px; color:#4a4a52; }
+    .rt-loose { margin:0 0 10px; display:flex; flex-wrap:wrap; gap:6px; }
+    .rt-loose-lbl { font-size:10.5px; color:#4a4a52; margin-bottom:5px; }
+
     .sw-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
     .sw { width:32px; height:32px; border-radius:9px; border:2px solid transparent; cursor:pointer; }
     .sw.sel { border-color:#fff; }
@@ -871,6 +884,7 @@
     let rtView = 'week';          // 'week' | 'tpl'
     let rtEdit = null;            // { dow, hour, span, color, text, hb }
     let rtScrollToNow = false;    // sayfaya girildiğinde şu anki saate kaydır
+    let rtShowTasks = (lsGet('rt_show_tasks') !== '0');   // o günün görevleri de listede görünsün mü
 
     function R(){ if(!db.routine) db.routine = emptyRoutine(); return db.routine; }
     function rtHours(){ const c = R().cfg; return { start:c.start, end:c.end, n:Math.max(1, c.end - c.start) }; }
@@ -988,6 +1002,15 @@
       };
       bar.appendChild(mk('🎨 Gün', () => openDayTheme(dow)));
       if(rtView === 'week'){
+        const tb = mk(rtShowTasks ? '📋 Görevler açık' : '📋 Görevler kapalı', () => {
+          rtShowTasks = !rtShowTasks;
+          lsSet('rt_show_tasks', rtShowTasks ? '1' : '0');
+          renderCurrentPage();
+        });
+        if(rtShowTasks){ tb.style.color = 'var(--accent)'; tb.style.borderColor = '#7dd3fc55'; }
+        bar.appendChild(tb);
+      }
+      if(rtView === 'week'){
         bar.appendChild(mk('⇪ Şablona yaz', () => {
           customConfirm('Şablon', 'Bu haftanın düzeni şablona yazılsın mı?', () => {
             R().template = JSON.parse(JSON.stringify(rtCells()));
@@ -1021,12 +1044,27 @@
         }
 
         const bars = document.createElement('div'); bars.className = 'ws-bars';
+        /* o günün görevlerini saatlere göre işaretle (şerit sadece rutini göstermesin) */
+        const taskHours = {};
+        if(rtShowTasks && rtView === 'week'){
+          (db.days[dk] || []).forEach(t => {
+            const m = /^(\d{1,2}):(\d{2})$/.exec(t.time || '');
+            if(m) taskHours[Number(m[1])] = t.done ? 'done' : (t.type || 'gorev');
+          });
+        }
         for(let h = H.start; h < H.end; h++){
           const bar1 = document.createElement('div'); bar1.className = 'ws-bar';
           const head = resolveHead(cells, d, h);
           if(head && head.cell && (head.cell.t || head.cell.c)){
             bar1.style.background = head.cell.c || '#3f3f46';
             if(rtView === 'week' && R().done[rtDoneKey(dk, h)]) bar1.style.opacity = '.35';
+          }
+          const tk = taskHours[h];
+          if(tk){
+            const col = tk === 'termin' ? 'var(--frame-termin)'
+                      : tk === 'hedef' ? 'var(--frame-hedef)'
+                      : tk === 'done' ? '#3f3f46' : 'var(--frame-gorev)';
+            bar1.style.boxShadow = 'inset 3px 0 0 ' + col;
           }
           bars.appendChild(bar1);
         }
@@ -1044,6 +1082,69 @@
         t.style.cssText = `font-size:12px; color:${theme.color}; margin-bottom:10px; font-weight:600;`;
         t.textContent = theme.name;
         pageContainer.appendChild(t);
+      }
+
+      /* --- o günün görev/terminlerini saatlere dağıt --- */
+      /* Şablon görünümünde gerçek bir tarih yok, o yüzden sadece hafta görünümünde. */
+      const showTasks = rtShowTasks && rtView === 'week';
+      const byHour = {};      // saat -> [görev]
+      const looseTasks = [];  // saati olmayan veya tablo aralığı dışında kalanlar
+      if(showTasks){
+        sortTasks(db.days[dateK] || []).forEach(t => {
+          const m = /^(\d{1,2}):(\d{2})$/.exec(t.time || '');
+          if(!m){ looseTasks.push(t); return; }
+          const hh = Number(m[1]);
+          if(hh < H.start || hh >= H.end){ looseTasks.push(t); return; }
+          (byHour[hh] = byHour[hh] || []).push(t);
+        });
+      }
+
+      function taskRow(t){
+        const row = document.createElement('div'); row.className = 'rt-row';
+        const lbl = document.createElement('div'); lbl.className = 'rt-hour sub';
+        lbl.textContent = t.time || '';
+        const el = document.createElement('div');
+        el.className = 'rt-task' + (t.done ? ' done' : '');
+        el.style.borderLeftColor = t.type === 'termin' ? 'var(--frame-termin)'
+                                 : (t.type === 'hedef' ? 'var(--frame-hedef)' : 'var(--frame-gorev)');
+
+        const circle = document.createElement('div');
+        circle.className = 'check-circle' + (t.done ? ' checked' : '');
+        circle.textContent = '✓';
+        circle.onclick = (e) => { e.stopPropagation(); toggleTask(t.id, 'day', dateK); };
+
+        const txt = document.createElement('div'); txt.className = 'rt-task-text';
+        txt.textContent = t.text || '(başlıksız)';
+
+        el.appendChild(circle); el.appendChild(txt);
+        const tg = (db.tags || []).find(x => x.name === t.tag);
+        if(tg){
+          const s = document.createElement('span');
+          s.className = 'rt-task-tag';
+          s.style.color = tg.color; s.style.border = '1px solid ' + tg.color + '44';
+          s.textContent = tg.name;
+          el.appendChild(s);
+        }
+        el.onclick = () => openEditTask(t.id, 'day', dateK);
+        row.appendChild(lbl); row.appendChild(el);
+        return row;
+      }
+      /* bir bloğun kapsadığı saatlere düşen görevleri bloğun altına ekle */
+      function appendTasks(fromH, toH){
+        for(let hh = fromH; hh < toH; hh++){
+          (byHour[hh] || []).forEach(t => pageContainer.appendChild(taskRow(t)));
+        }
+      }
+
+      /* saatsiz / aralık dışı olanlar en üstte topluca */
+      if(looseTasks.length){
+        const lbl = document.createElement('div'); lbl.className = 'rt-loose-lbl';
+        lbl.textContent = 'Saati yok / tablo aralığı dışında';
+        pageContainer.appendChild(lbl);
+        looseTasks.forEach(t => pageContainer.appendChild(taskRow(t)));
+        const sep = document.createElement('div');
+        sep.style.cssText = 'height:1px; background:var(--line); margin:10px 0;';
+        pageContainer.appendChild(sep);
       }
 
       let h = H.start;
@@ -1066,6 +1167,7 @@
           blk.onclick = () => openRtCell(dow, hourAt);
           row.appendChild(lbl); row.appendChild(blk);
           pageContainer.appendChild(row);
+          appendTasks(hourAt, hourAt + 1);
           h++;
           continue;
         }
@@ -1120,6 +1222,7 @@
         blk.onclick = () => openRtCell(head.dow, head.hour);
         row.appendChild(lbl); row.appendChild(blk);
         pageContainer.appendChild(row);
+        appendTasks(from, to);
         h = to;
       }
 
